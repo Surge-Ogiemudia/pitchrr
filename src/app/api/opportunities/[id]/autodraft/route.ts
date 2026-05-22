@@ -27,7 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Find missing drafts
     const missingIndices = opportunity.scrapedQuestions
-      .map((_question, idx) => idx)
+      .map((_question: unknown, idx) => idx)
       .filter(idx => !opportunity.draftedAnswers?.some((a: any) => a.questionIndex === idx));
 
     if (missingIndices.length === 0) {
