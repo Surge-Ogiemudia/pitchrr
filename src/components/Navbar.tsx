@@ -24,21 +24,30 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-1">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  pathname === link.href
-                    ? 'bg-primary/10 text-primary-light border border-primary/20'
-                    : 'text-muted hover:text-foreground hover:bg-elevated'
-                }`}
-              >
-                <span className="mr-2">{link.icon}</span>
-                {link.label}
-              </Link>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    pathname === link.href
+                      ? 'bg-primary/10 text-primary-light border border-primary/20'
+                      : 'text-muted hover:text-foreground hover:bg-elevated'
+                  }`}
+                >
+                  <span className="mr-2">{link.icon}</span>
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+            <a
+              href={process.env.NEXT_PUBLIC_PREPARR_URL || 'http://localhost:3000'}
+              className="text-primary hover:text-primary-light font-bold text-2xl ml-2 transition-colors"
+              title="Go to Preparr"
+            >
+              »
+            </a>
           </div>
         </div>
       </div>
