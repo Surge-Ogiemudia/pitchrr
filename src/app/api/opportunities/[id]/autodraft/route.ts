@@ -26,9 +26,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // Find missing drafts
-    const missingIndices = opportunity.scrapedQuestions
-      .map((_question: unknown, idx: number) => idx)
-      .filter(idx => !opportunity.draftedAnswers?.some((a: any) => a.questionIndex === idx));
+    const missingIndices: number[] = [];
+    for (let idx = 0; idx < opportunity.scrapedQuestions.length; idx++) {
+      if (!opportunity.draftedAnswers?.some((a: any) => a.questionIndex === idx)) {
+        missingIndices.push(idx);
+      }
+    }
 
     if (missingIndices.length === 0) {
       return NextResponse.json({ message: 'All questions drafted' });
