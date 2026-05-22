@@ -1,0 +1,227 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import { formatDistanceToNow } from 'date-fns';
+
+interface Opportunity {
+  _id: string;
+  programmeName: string;
+  organisation: string;
+  deadline: string | null;
+  status: string;
+  fitScore: { overall: number };
+}
+
+const COLUMNS = [
+  { id: 'discovered', label: 'Discovered' },
+  { id: 'analyzing', label: 'Analyzing' },
+  { id: 'drafting', label: 'Drafting' },
+  { id: 'reviewing', label: 'Reviewing' },
+  { id: 'submitted', label: 'Submitted' },
+  { id: 'interview', label: 'Interview' },
+];
+
+export default function PipelineDashboard() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [inputData, setInputData] = useState('');
+  const [processingUrl, setProcessingUrl] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, []);
+
+  const fetchOpportunities = async () => {
+    try {
+      const res = await fetch('/api/opportunities');
+      if (res.ok) {
+        const data = await res.json();
+        setOpportunities(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleIntake = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputData.trim()) return;
+    
+    setProcessingUrl(true);
+    
+    // Determine if it's a URL or raw text
+    const isUrl = inputData.trim().startsWith('http://') || inputData.trim().startsWith('https://');
+    
+    try {
+      const res = await fetch('/api/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url: isUrl ? inputData.trim() : undefined,
+          rawText: !isUrl ? inputData.trim() : undefined 
+        }),
+      });
+      
+      if (res.ok) {
+        const opp = await res.json();
+        setInputData('');
+        fetchOpportunities();
+        // router.push(`/opportunity/${opp._id}`);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setProcessingUrl(false);
+    }
+  };
+
+  const deleteOpportunity = async (id: string) => {
+    try {
+      const res = await fetch(`/api/opportunities/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setOpportunities(prev => prev.filter(o => o._id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmDelete(null);
+    }
+  };
+
+  const getDeadlineText = (dateStr: string | null) => {
+    if (!dateStr) return 'No deadline';
+    const date = new Date(dateStr);
+    const now = new Date();
+    if (date < now) return 'Passed';
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
+
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-1">Application Pipeline</h1>
+            <p className="text-muted text-sm">Strategic tracking for all opportunities.</p>
+          </div>
+          
+          <form onSubmit={handleIntake} className="flex flex-1 max-w-xl gap-2">
+            <textarea
+              value={inputData}
+              onChange={(e) => setInputData(e.target.value)}
+              placeholder="Paste opportunity URL or raw page text here..."
+              required
+              rows={1}
+              className="flex-1 bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors resize-y min-h-[44px] max-h-32"
+            />
+            <button
+              type="submit"
+              disabled={processingUrl || !inputData.trim()}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap self-start"
+            >
+              {processingUrl ? 'Analyzing...' : 'Add & Analyze'}
+            </button>
+          </form>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-24 text-muted">Loading pipeline...</div>
+        ) : (
+          <div className="flex gap-6 overflow-x-auto pb-8 snap-x">
+            {COLUMNS.map(col => {
+              const colOpps = opportunities.filter(o => o.status === col.id);
+              return (
+                <div key={col.id} className="flex-none w-80 flex flex-col snap-start">
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full status-${col.id} bg-current border border-current`} />
+                      {col.label}
+                    </h3>
+                    <span className="text-xs font-medium text-muted bg-elevated px-2 py-0.5 rounded-full">
+                      {colOpps.length}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3 min-h-[200px] p-2 -mx-2 rounded-xl bg-surface/50">
+                    {colOpps.map(opp => (
+                      <div
+                        key={opp._id}
+                        onClick={() => { if (confirmDelete !== opp._id) router.push(`/opportunity/${opp._id}`); }}
+                        className="glass-card p-4 cursor-pointer hover:border-primary/50 relative group"
+                      >
+                        {confirmDelete === opp._id ? (
+                          <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
+                            <p className="text-sm font-semibold text-foreground">Delete this application?</p>
+                            <p className="text-xs text-muted line-clamp-1">{opp.programmeName}</p>
+                            <div className="flex gap-2 mt-1">
+                              <button
+                                onClick={() => deleteOpportunity(opp._id)}
+                                className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-danger/20 text-danger border border-danger/40 hover:bg-danger/30 transition-colors"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => setConfirmDelete(null)}
+                                className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-elevated text-muted border border-border hover:text-foreground transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-xs font-semibold text-primary">
+                                Fit: {opp.fitScore?.overall || 0}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted">
+                                  {getDeadlineText(opp.deadline)}
+                                </span>
+                                <button
+                                  onClick={e => { e.stopPropagation(); setConfirmDelete(opp._id); }}
+                                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all"
+                                  title="Delete"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                    <path d="M10 11v6M14 11v6" />
+                                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                            <h4 className="font-medium text-foreground line-clamp-2 leading-snug mb-1">
+                              {opp.programmeName}
+                            </h4>
+                            <p className="text-xs text-muted truncate">
+                              {opp.organisation}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                    {colOpps.length === 0 && (
+                      <div className="text-center py-8 text-xs text-subtle border border-dashed border-border rounded-lg">
+                        Empty
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

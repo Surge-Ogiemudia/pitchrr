@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0A0A0F;
+  --bg-surface: #12121A;
+  --bg-elevated: #1A1A25;
+  --bg-hover: #222233;
+  --border-default: #2A2A3A;
+  --border-light: #1E1E2E;
+  
+  /* Amber/Gold Accent for Pitchrr */
+  --primary: #F59E0B;
+  --primary-light: #FCD34D;
+  --primary-glow: rgba(245, 158, 11, 0.15);
+  
+  --success: #10B981;
+  --success-glow: rgba(16, 185, 129, 0.15);
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --danger-glow: rgba(239, 68, 68, 0.15);
+  
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+  
+  --gradient-primary: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%);
+  --gradient-surface: linear-gradient(180deg, #14141E 0%, #0A0A0F 100%);
+}
+
+@theme inline {
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-border: var(--border-default);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-muted: var(--text-secondary);
+  --color-subtle: var(--text-tertiary);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--primary-glow); }
+  50% { box-shadow: 0 0 40px var(--primary-glow), 0 0 60px var(--primary-glow); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(18, 18, 26, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 30px var(--primary-glow);
+  transform: translateY(-2px);
+}
+
+/* Chat message styles */
+.chat-message-user {
+  background: var(--primary);
+  color: #0A0A0F;
+  font-weight: 500;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.chat-message-assistant {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 18px 18px 18px 4px;
+}
+
+/* Status colors */
+.status-discovered { color: #9CA3AF; border-color: #374151; background: rgba(55, 65, 81, 0.2); }
+.status-analyzing { color: #8B5CF6; border-color: #6D28D9; background: rgba(109, 40, 217, 0.2); }
+.status-drafting { color: #3B82F6; border-color: #1D4ED8; background: rgba(29, 78, 216, 0.2); }
+.status-submitted { color: #F59E0B; border-color: #B45309; background: rgba(180, 83, 9, 0.2); }
+.status-interview { color: #10B981; border-color: #047857; background: rgba(4, 120, 87, 0.2); }
+.status-won { color: #FCD34D; border-color: #D97706; background: rgba(217, 119, 6, 0.2); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+.status-lost { color: #EF4444; border-color: #B91C1C; background: rgba(185, 28, 28, 0.2); }
