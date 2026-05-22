@@ -53,7 +53,7 @@ Word Limit: ${q.wordLimit ? `${q.wordLimit} words` : 'None'}
 Output ONLY the final draft answer text. No headers, no "DRAFT" labels, no strategy explanations, no commentary. Just the ready-to-submit answer.`;
 
       const { text } = await generateText({
-        model: anthropic('claude-sonnet-4-6'),
+        model: anthropic('claude-3-5-sonnet-latest'),
         system: systemPrompt,
         prompt: 'Please draft the best possible answer for this question using my profile context.',
         maxRetries: 2,

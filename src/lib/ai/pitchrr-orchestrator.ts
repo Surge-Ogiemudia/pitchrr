@@ -159,7 +159,7 @@ IMPORTANT: Call this immediately whenever the founder shares ANY personal or bus
     .filter((m: any) => m.content.trim() !== '');
 
   const result = streamText({
-    model: anthropic('claude-sonnet-4-6'),
+    model: anthropic('claude-3-5-sonnet-latest'),
     system: systemPrompt,
     messages: aiMessages,
     ...(Object.keys(tools).length > 0 ? { tools } : {}),
