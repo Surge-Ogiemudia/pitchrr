@@ -42,7 +42,7 @@ export default function Navbar() {
               ))}
             </div>
             <a
-              href={process.env.NEXT_PUBLIC_PREPARR_URL || 'http://localhost:3000'}
+              href={process.env.NEXT_PUBLIC_PREPARR_URL || 'https://preprr.vercel.app/'}
               className="text-primary hover:text-primary-light font-bold text-2xl ml-2 transition-colors"
               title="Go to Preparr"
             >
