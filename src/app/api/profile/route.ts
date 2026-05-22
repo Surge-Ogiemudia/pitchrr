@@ -44,3 +44,22 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { key } = await req.json();
+    if (!key) return NextResponse.json({ error: 'key required' }, { status: 400 });
+
+    const sharedConn = await dbConnectShared();
+    const StartupProfile = getStartupProfileModel(sharedConn);
+    const doc = await StartupProfile.findOne();
+    if (!doc) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+
+    (doc as any).dynamicFields = (doc.dynamicFields as any[]).filter((f: any) => f.key !== key);
+    await doc.save();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete fact:', error);
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  }
+}

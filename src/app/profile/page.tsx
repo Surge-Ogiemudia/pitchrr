@@ -74,6 +74,118 @@ function FieldCard({ label, value, field, onSave }: { label: string; value: stri
   );
 }
 
+function FactsTab({ facts, onSave, onDelete }: {
+  facts: { key: string; value: string }[];
+  onSave: (field: string, value: string) => void;
+  onDelete: (key: string) => void;
+}) {
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [draftValue, setDraftValue] = useState('');
+  const [draftKey, setDraftKey] = useState('');
+  const [addingNew, setAddingNew] = useState(false);
+  const [newKey, setNewKey] = useState('');
+  const [newValue, setNewValue] = useState('');
+
+  const startEdit = (key: string, value: string) => {
+    setEditingKey(key);
+    setDraftKey(key);
+    setDraftValue(value);
+  };
+
+  const commitEdit = (originalKey: string) => {
+    const k = draftKey.trim();
+    const v = draftValue.trim();
+    if (!k || !v) return;
+    if (k !== originalKey) onDelete(originalKey);
+    onSave(k, v);
+    setEditingKey(null);
+  };
+
+  const commitNew = () => {
+    const k = newKey.trim();
+    const v = newValue.trim();
+    if (!k || !v) return;
+    onSave(k, v);
+    setNewKey('');
+    setNewValue('');
+    setAddingNew(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      {facts.length > 0 ? (
+        facts.map((field) => (
+          <div key={field.key} className="glass-card p-4 group">
+            {editingKey === field.key ? (
+              <div className="space-y-2">
+                <input
+                  value={draftKey}
+                  onChange={(e) => setDraftKey(e.target.value)}
+                  placeholder="Key"
+                  className="w-full bg-elevated border border-primary rounded-lg px-3 py-1.5 text-xs font-semibold text-primary focus:outline-none"
+                />
+                <textarea
+                  value={draftValue}
+                  onChange={(e) => setDraftValue(e.target.value)}
+                  rows={2}
+                  className="w-full bg-elevated border border-primary rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none resize-none"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => commitEdit(field.key)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-[#0A0A0F] font-semibold">Save</button>
+                  <button onClick={() => setEditingKey(null)} className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted hover:text-foreground">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-3 items-start">
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider w-32 flex-shrink-0 pt-0.5 break-all">{field.key}</span>
+                <p className="text-sm text-foreground leading-relaxed flex-1">{field.value}</p>
+                <div className="opacity-0 group-hover:opacity-100 flex gap-1 flex-shrink-0 transition-all">
+                  <button onClick={() => startEdit(field.key, field.value)} className="text-xs text-muted hover:text-primary px-1.5 py-0.5 rounded">Edit</button>
+                  <button onClick={() => onDelete(field.key)} className="text-xs text-muted hover:text-red-400 px-1.5 py-0.5 rounded">Delete</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))
+      ) : (
+        <div className="glass-card p-6 text-center">
+          <p className="text-muted text-sm italic">No facts yet.</p>
+          <p className="text-muted text-xs mt-1">Facts appear here automatically as you draft and chat. You can also add them manually below.</p>
+        </div>
+      )}
+
+      {addingNew ? (
+        <div className="glass-card p-4 space-y-2 border border-primary/30">
+          <input
+            value={newKey}
+            onChange={(e) => setNewKey(e.target.value)}
+            placeholder="Key (e.g. awards, incorporation_date)"
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-primary text-foreground"
+          />
+          <textarea
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
+            placeholder="Value"
+            rows={2}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary resize-none"
+          />
+          <div className="flex gap-2">
+            <button onClick={commitNew} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-[#0A0A0F] font-semibold">Add</button>
+            <button onClick={() => { setAddingNew(false); setNewKey(''); setNewValue(''); }} className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingNew(true)}
+          className="w-full py-2.5 rounded-xl border border-dashed border-border text-xs text-muted hover:text-foreground hover:border-primary/50 transition-colors"
+        >
+          + Add a fact manually
+        </button>
+      )}
+    </div>
+  );
+}
+
 const getMessageText = (m: any) =>
   (m.parts as any[])
     ?.filter((p: any) => p.type === 'text')
@@ -139,6 +251,19 @@ export default function ProfilePage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ field, value }),
+      });
+      await fetchProfile();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFactDelete = async (key: string) => {
+    try {
+      await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
       });
       await fetchProfile();
     } catch (err) {
@@ -343,21 +468,11 @@ export default function ProfilePage() {
 
               {/* FACTS TAB */}
               {activeTab === 'facts' && (
-                <div className="space-y-2">
-                  {profileData?.dynamicFields?.length > 0 ? (
-                    profileData.dynamicFields.map((field: any, i: number) => (
-                      <div key={i} className="glass-card p-4 flex gap-3">
-                        <span className="text-xs font-semibold text-primary uppercase tracking-wider w-32 flex-shrink-0 pt-0.5">{field.key}</span>
-                        <p className="text-sm text-foreground leading-relaxed">{field.value}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="glass-card p-6 text-center">
-                      <p className="text-muted text-sm italic">No extracted facts yet.</p>
-                      <p className="text-muted text-xs mt-1">Facts get added automatically as you draft applications and chat.</p>
-                    </div>
-                  )}
-                </div>
+                <FactsTab
+                  facts={profileData?.dynamicFields || []}
+                  onSave={handleFieldSave}
+                  onDelete={handleFactDelete}
+                />
               )}
 
               <p className="text-xs text-muted text-center mt-2 px-2">
