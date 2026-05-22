@@ -158,10 +158,9 @@ Always confirm to the user what you changed after using a tool.`;
     system: systemPrompt,
     messages: aiMessages,
     ...(Object.keys(tools).length > 0 ? { tools } : {}),
-    maxSteps: input.mode === 'profile' ? 5 : 1,
     maxOutputTokens: 4096,
     temperature: 0.7,
-  });
+  } as Parameters<typeof streamText>[0]);
 
   return result;
 }

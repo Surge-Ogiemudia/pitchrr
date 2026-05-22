@@ -203,8 +203,8 @@ export default function ProfilePage() {
         <div className="flex-1 flex flex-col glass-card overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {messages.map((m) => (
-              <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-5 py-4 ${m.role === 'user' ? 'chat-message-user' : 'chat-message-assistant'}`}>
+              <div key={m.id} className={`flex ${(m.role as string) === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-5 py-4 ${(m.role as string) === 'user' ? 'chat-message-user' : 'chat-message-assistant'}`}>
                   <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed">
                     <ReactMarkdown>{getMessageText(m)}</ReactMarkdown>
                   </div>
