@@ -2,7 +2,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { streamText, tool, zodSchema } from 'ai';
 import { z } from 'zod';
 import { dbConnect, dbConnectShared } from '@/lib/db';
-import { getStartupProfileModel } from '@/models/StartupProfile';
+import { getStartupProfileModel, TRACKED_PROFILE_FIELDS } from '@/models/StartupProfile';
 import Opportunity from '@/models/Opportunity';
 import { buildSystemPrompt, AIMode } from '@/lib/ai/prompts';
 
@@ -43,10 +43,43 @@ Question: ${input.draftingContext.question}
 Word Limit: ${input.draftingContext.wordLimit ? `${input.draftingContext.wordLimit} words` : 'None'}
 ${existingDraft ? `\nCurrently Saved Draft:\n${existingDraft.content}\n` : ''}
 Draft the perfect response for this specific question. Explain your framing strategy afterwards.
-When the user asks you to "save", "populate", "update the field", "use that", or similar — call the save_draft tool with the clean answer text only (no strategy section, no headings).`;
+When the user asks you to "save", "populate", "update the field", "use that", or similar — call the save_draft tool with the clean answer text only (no strategy section, no headings).
+If the question asks for factual info (email, phone, name, startup name, website, location, stage, industry) — ALSO call update_profile_field to store it in the master profile.`;
   }
 
+  // Shared profile field update tool — used in both profile and drafting modes
+  const updateProfileFieldTool = tool({
+    description: `Updates ANY field in the master founder or startup profile. Use this for:
+- Founder fields: founderName, founderEmail, founderPhone, founderLocation, founderLinkedIn, founderBio
+- Startup fields: startupName, website, stage, industry, oneLiner, problem, solution, businessModel, marketSize, uniqueness, mission, useOfFunds
+- Any custom fact: use a descriptive key (e.g. "awards", "incorporation_date", "co_founder_email")
+IMPORTANT: Call this immediately whenever the founder shares ANY personal or business information.`,
+    inputSchema: zodSchema(z.object({
+      field: z.string().describe('The profile field name to update'),
+      value: z.string().describe('The new value'),
+    })),
+    execute: async ({ field, value }) => {
+      const doc = await StartupProfile.findOne();
+      if (!doc) return 'Profile not found.';
+
+      if (TRACKED_PROFILE_FIELDS.has(field)) {
+        (doc as any)[field] = { value, source: 'pitchrr_ai', updatedAt: new Date() };
+      } else {
+        const existingIdx = (doc.dynamicFields as any[]).findIndex((f: any) => f.key === field);
+        if (existingIdx >= 0) {
+          (doc.dynamicFields as any[])[existingIdx].value = value;
+          (doc.dynamicFields as any[])[existingIdx].source = 'pitchrr_ai';
+        } else {
+          (doc.dynamicFields as any[]).push({ key: field, value, source: 'pitchrr_ai', confidence: 1, addedAt: new Date() });
+        }
+      }
+      await doc.save();
+      return `Saved: ${field} = "${value}"`;
+    }
+  });
+
   let tools: any = {};
+
   if (input.mode === 'drafting' && input.opportunityId && input.draftingContext?.questionIndex !== undefined) {
     const qIdx = input.draftingContext.questionIndex;
     tools = {
@@ -58,83 +91,55 @@ When the user asks you to "save", "populate", "update the field", "use that", or
         execute: async ({ content }) => {
           const opp = await Opportunity.findById(input.opportunityId);
           if (!opp) return 'Opportunity not found.';
-          const existingIdx = opp.draftedAnswers.findIndex((a: any) => a.questionIndex === qIdx);
+          const existingIdx = (opp.draftedAnswers as any[]).findIndex((a: any) => a.questionIndex === qIdx);
           if (existingIdx >= 0) {
-            opp.draftedAnswers[existingIdx].content = content;
-            opp.draftedAnswers[existingIdx].status = 'draft';
+            (opp.draftedAnswers as any[])[existingIdx].content = content;
+            (opp.draftedAnswers as any[])[existingIdx].status = 'draft';
           } else {
-            opp.draftedAnswers.push({ questionIndex: qIdx, content, status: 'draft', updatedAt: new Date() });
+            (opp.draftedAnswers as any[]).push({ questionIndex: qIdx, content, status: 'draft', updatedAt: new Date() });
           }
           await opp.save();
-          return `Field saved.`;
+          return 'Field saved.';
         }
-      })
+      }),
+      update_profile_field: updateProfileFieldTool,
     };
   } else if (input.mode === 'profile') {
-    systemPrompt += `\n\n--- GOD MODE: PROFILE MUTATOR ---
-You have the ability to permanently edit the user's Startup Profile and Founder Profile in the database.
-If the user tells you that their data is messy, duplicate, or incorrect, you MUST use your tools to rewrite and clean up their profile.
-For example, if they say "remove duplicates from my team", use the update_team tool with a consolidated list.
-If they say "update my one liner", use update_startup_field.
-Always confirm to the user what you changed after using a tool.`;
-
-    // profile tools below
     tools = {
+      update_profile_field: updateProfileFieldTool,
       update_team: tool({
-        description: 'Overwrites the Founder & Team array. Use this to remove duplicates and consolidate team members.',
+        description: 'Overwrites the entire Founder & Team array. Use this to add, remove, or consolidate team members. Each member needs name, role, and background.',
         inputSchema: zodSchema(z.object({
           team: z.array(z.object({
             name: z.string(),
             role: z.string().describe('e.g., Founder, CTO, Technical Contributor'),
             background: z.string().describe('Short background info'),
-            source: z.string().default('pitchrr_ai'),
           }))
         })),
         execute: async ({ team }) => {
           const doc = await StartupProfile.findOne();
-          if (doc) {
-            doc.team = team.map((t: any) => ({ ...t, addedAt: new Date() }));
-            await doc.save();
-            return `Successfully updated team to have ${team.length} members.`;
-          }
-          return 'Profile not found.';
-        }
-      }),
-      update_startup_field: tool({
-        description: 'Updates a specific string field in the startup profile (e.g., oneLiner, problem, solution, businessModel, marketSize, uniqueness, mission).',
-        inputSchema: zodSchema(z.object({
-          field: z.enum(['oneLiner', 'problem', 'solution', 'businessModel', 'marketSize', 'uniqueness', 'mission']),
-          value: z.string()
-        })),
-        execute: async ({ field, value }) => {
-          const doc = await StartupProfile.findOne();
-          if (doc) {
-            doc[field] = { value, source: 'pitchrr_ai', updatedAt: new Date() };
-            await doc.save();
-            return `Successfully updated ${field}.`;
-          }
-          return 'Profile not found.';
+          if (!doc) return 'Profile not found.';
+          (doc as any).team = team.map((t: any) => ({ ...t, source: 'pitchrr_ai', addedAt: new Date() }));
+          await doc.save();
+          return `Team updated: ${team.length} member(s) saved.`;
         }
       }),
       update_traction: tool({
-        description: 'Overwrites the Traction array. Use this to clean up messy or duplicate traction signals.',
+        description: 'Overwrites the Traction array. Use this to clean up, add, or remove traction signals.',
         inputSchema: zodSchema(z.object({
           traction: z.array(z.object({
             description: z.string(),
             type: z.enum(['revenue', 'users', 'partnerships', 'wordOfMouth', 'milestone', 'other']),
-            source: z.string().default('pitchrr_ai'),
           }))
         })),
         execute: async ({ traction }) => {
           const doc = await StartupProfile.findOne();
-          if (doc) {
-            doc.traction = traction.map((t: any) => ({ ...t, addedAt: new Date() }));
-            await doc.save();
-            return `Successfully updated traction to have ${traction.length} signals.`;
-          }
-          return 'Profile not found.';
+          if (!doc) return 'Profile not found.';
+          (doc as any).traction = traction.map((t: any) => ({ ...t, source: 'pitchrr_ai', addedAt: new Date() }));
+          await doc.save();
+          return `Traction updated: ${traction.length} signal(s) saved.`;
         }
-      })
+      }),
     };
   }
 

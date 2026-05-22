@@ -1,21 +1,46 @@
 import { NextResponse } from 'next/server';
 import { dbConnectShared } from '@/lib/db';
-import { getStartupProfileModel } from '@/models/StartupProfile';
+import { getStartupProfileModel, TRACKED_PROFILE_FIELDS } from '@/models/StartupProfile';
 
 export async function GET() {
   try {
     const sharedConn = await dbConnectShared();
     const StartupProfile = getStartupProfileModel(sharedConn);
-    
-    let profile = await StartupProfile.findOne().lean();
-    if (!profile) {
-      // Return empty if not found
-      return NextResponse.json(null);
-    }
-    
-    return NextResponse.json(profile);
+    const profile = await StartupProfile.findOne().lean();
+    return NextResponse.json(profile ?? null);
   } catch (error) {
     console.error('Failed to fetch profile:', error);
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const { field, value } = await req.json();
+    if (!field || value === undefined) {
+      return NextResponse.json({ error: 'field and value required' }, { status: 400 });
+    }
+
+    const sharedConn = await dbConnectShared();
+    const StartupProfile = getStartupProfileModel(sharedConn);
+    const doc = await StartupProfile.findOne();
+    if (!doc) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+
+    if (TRACKED_PROFILE_FIELDS.has(field)) {
+      (doc as any)[field] = { value, source: 'manual', updatedAt: new Date() };
+    } else {
+      const existingIdx = (doc.dynamicFields as any[]).findIndex((f: any) => f.key === field);
+      if (existingIdx >= 0) {
+        (doc.dynamicFields as any[])[existingIdx].value = value;
+      } else {
+        (doc.dynamicFields as any[]).push({ key: field, value, source: 'manual', confidence: 1, addedAt: new Date() });
+      }
+    }
+
+    await doc.save();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to update profile:', error);
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }

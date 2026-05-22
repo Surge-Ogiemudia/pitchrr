@@ -5,6 +5,7 @@ import { getStartupProfileModel } from '@/models/StartupProfile';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
+import { maybeEnrichProfile } from '@/lib/ai/profile-enrichment';
 
 export const maxDuration = 60; // Allow more time for batch drafting
 
@@ -64,9 +65,12 @@ Output ONLY the final draft answer text. No headers, no "DRAFT" labels, no strat
         content: text,
         status: 'draft',
       });
-      
+
       // Save after each one just in case of timeout
       await opportunity.save();
+
+      // Best-effort profile enrichment from this answer
+      maybeEnrichProfile(q.question, text).catch(() => {});
     }
 
     return NextResponse.json({ success: true, count: missingIndices.length });

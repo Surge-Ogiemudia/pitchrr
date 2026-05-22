@@ -38,16 +38,30 @@ interface Framing {
 }
 
 export interface IStartupProfile extends Document {
+  // Founder contact & identity
+  founderName: TrackedField;
+  founderEmail: TrackedField;
+  founderPhone: TrackedField;
+  founderLocation: TrackedField;
+  founderLinkedIn: TrackedField;
+  founderBio: TrackedField;
+  // Startup basics
+  startupName: TrackedField;
+  website: TrackedField;
+  stage: TrackedField;
+  industry: TrackedField;
+  // Startup narrative
   oneLiner: TrackedField;
   problem: TrackedField;
   solution: TrackedField;
-  traction: TractionItem[];
-  team: TeamMember[];
   businessModel: TrackedField;
   marketSize: TrackedField;
   uniqueness: TrackedField;
   useOfFunds: TrackedField;
   mission: TrackedField;
+  // Structured data
+  traction: TractionItem[];
+  team: TeamMember[];
   dynamicFields: DynamicField[];
   framings: Framing[];
   draftingRules: string[];
@@ -93,7 +107,23 @@ const FramingSchema = new Schema({
   addedAt: { type: Date, default: Date.now },
 }, { _id: true });
 
+export const TRACKED_PROFILE_FIELDS = new Set([
+  'founderName', 'founderEmail', 'founderPhone', 'founderLocation', 'founderLinkedIn', 'founderBio',
+  'startupName', 'website', 'stage', 'industry',
+  'oneLiner', 'problem', 'solution', 'businessModel', 'marketSize', 'uniqueness', 'mission', 'useOfFunds',
+]);
+
 export const StartupProfileSchema = new Schema({
+  founderName: { type: TrackedFieldSchema, default: () => ({}) },
+  founderEmail: { type: TrackedFieldSchema, default: () => ({}) },
+  founderPhone: { type: TrackedFieldSchema, default: () => ({}) },
+  founderLocation: { type: TrackedFieldSchema, default: () => ({}) },
+  founderLinkedIn: { type: TrackedFieldSchema, default: () => ({}) },
+  founderBio: { type: TrackedFieldSchema, default: () => ({}) },
+  startupName: { type: TrackedFieldSchema, default: () => ({}) },
+  website: { type: TrackedFieldSchema, default: () => ({}) },
+  stage: { type: TrackedFieldSchema, default: () => ({}) },
+  industry: { type: TrackedFieldSchema, default: () => ({}) },
   oneLiner: { type: TrackedFieldSchema, default: () => ({}) },
   problem: { type: TrackedFieldSchema, default: () => ({}) },
   solution: { type: TrackedFieldSchema, default: () => ({}) },
@@ -116,7 +146,6 @@ export const StartupProfileSchema = new Schema({
   collection: 'startup_profile',
 });
 
-// Helper function to get the model securely from a connection
 export function getStartupProfileModel(conn: any) {
   return conn.models.StartupProfile || conn.model('StartupProfile', StartupProfileSchema);
 }

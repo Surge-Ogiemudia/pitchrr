@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/db';
 import Opportunity from '@/models/Opportunity';
+import { maybeEnrichProfile } from '@/lib/ai/profile-enrichment';
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -60,6 +61,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     await opportunity.save();
+
+    // Best-effort: learn from this answer and enrich the master profile
+    const question = opportunity.scrapedQuestions?.[questionIndex]?.question;
+    if (question && content) {
+      maybeEnrichProfile(question, content).catch(() => {});
+    }
 
     return NextResponse.json(opportunity);
   } catch (error) {
