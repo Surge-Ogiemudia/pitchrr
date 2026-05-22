@@ -26,7 +26,7 @@ export async function scoreOpportunityFit(profile: IStartupProfile, opportunity:
   const systemPrompt = buildSystemPrompt({ mode: 'analysis', profile, opportunity });
 
   const { object } = await generateObject({
-    model: anthropic('claude-3-5-sonnet-latest'),
+    model: anthropic('claude-sonnet-4-6'),
     system: systemPrompt,
     prompt: `Based on the provided Founder Profile and Opportunity Context, perform a deep analysis of the fit. 
 Score the fit from 0 to 100. Provide a breakdown of the score by categories (e.g., Traction, Problem/Solution fit, Stage alignment).

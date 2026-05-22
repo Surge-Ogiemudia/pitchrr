@@ -25,7 +25,7 @@ export async function scrapeAndExtractOpportunity(url: string, rawText: string):
   const systemPrompt = buildSystemPrompt({ mode: 'intake' });
 
   const { object } = await generateObject({
-    model: anthropic('claude-3-5-sonnet-latest'),
+    model: anthropic('claude-sonnet-4-6'),
     system: systemPrompt,
     prompt: `Extract the opportunity details from the following raw text scraped from ${url}:\n\n${rawText}`,
     schema: OpportunityIntakeSchema,
@@ -49,7 +49,7 @@ export async function extractQuestionsFromText(rawText: string) {
   const systemPrompt = buildSystemPrompt({ mode: 'extract_questions' });
 
   const { object } = await generateObject({
-    model: anthropic('claude-3-5-sonnet-latest'),
+    model: anthropic('claude-sonnet-4-6'),
     system: systemPrompt,
     prompt: `Extract the questions from this text:\n\n${rawText}`,
     schema: QuestionExtractionSchema,

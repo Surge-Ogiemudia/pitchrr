@@ -37,7 +37,7 @@ Ignore the STRATEGY instruction above. Output ONLY the final draft answer text. 
       : `No word limit stated — infer the correct length from the question type. Personal/factual fields (name, email, phone, age, date, ID): one value only. Short-answer fields (stage, industry, availability): one phrase or sentence. Only write multiple paragraphs if the question explicitly asks for description or explanation.`;
 
     const result = streamText({
-      model: anthropic('claude-3-5-sonnet-latest'),
+      model: anthropic('claude-sonnet-4-6'),
       system: systemPrompt,
       prompt: `Question: ${q.question}\n${lengthHint}\n\nOutput ONLY the answer text. No headers, no strategy.`,
       temperature: 0.7,
