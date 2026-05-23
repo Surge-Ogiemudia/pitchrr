@@ -25,6 +25,9 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState<Tab>('intelligence');
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [editingDeadline, setEditingDeadline] = useState(false);
+  const [deadlineInput, setDeadlineInput] = useState('');
+  const [savingDeadline, setSavingDeadline] = useState(false);
   const router = useRouter();
 
   const handleStatusChange = async (newStatus: string) => {
@@ -51,6 +54,30 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
 
   const handleUpdate = (patch: Partial<any>) => {
     setOpportunity((prev: any) => prev ? { ...prev, ...patch } : prev);
+  };
+
+  const openDeadlineEdit = () => {
+    const current = opportunity?.deadline ? new Date(opportunity.deadline).toISOString().split('T')[0] : '';
+    setDeadlineInput(current);
+    setEditingDeadline(true);
+  };
+
+  const saveDeadline = async () => {
+    setSavingDeadline(true);
+    try {
+      const newDeadline = deadlineInput ? new Date(deadlineInput).toISOString() : null;
+      const res = await fetch(`/api/opportunities/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deadline: newDeadline }),
+      });
+      if (res.ok) {
+        setOpportunity((prev: any) => prev ? { ...prev, deadline: newDeadline } : prev);
+        setEditingDeadline(false);
+      }
+    } finally {
+      setSavingDeadline(false);
+    }
   };
 
   if (loading) return <div className="min-h-screen pt-24 text-center text-muted">Loading opportunity...</div>;
@@ -102,10 +129,44 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
                   </div>
                 )}
               </div>
-              {opportunity.deadline && (
-                <span className="text-xs sm:text-sm font-medium text-warning bg-warning/10 px-3 py-1 rounded-full">
-                  Due {formatDistanceToNow(new Date(opportunity.deadline), { addSuffix: true })}
-                </span>
+              {editingDeadline ? (
+                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                  <input
+                    type="date"
+                    value={deadlineInput}
+                    onChange={e => setDeadlineInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveDeadline(); if (e.key === 'Escape') setEditingDeadline(false); }}
+                    autoFocus
+                    className="bg-elevated border border-primary rounded-lg px-2 py-1 text-xs text-foreground focus:outline-none"
+                  />
+                  <button
+                    onClick={saveDeadline}
+                    disabled={savingDeadline}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-primary text-[#0A0A0F] disabled:opacity-50"
+                  >
+                    {savingDeadline ? '...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingDeadline(false)}
+                    className="text-xs text-muted hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={openDeadlineEdit}
+                  className={`text-xs sm:text-sm font-medium px-3 py-1 rounded-full transition-colors ${
+                    opportunity.deadline
+                      ? 'text-warning bg-warning/10 hover:bg-warning/20'
+                      : 'text-subtle bg-elevated border border-dashed border-border hover:border-primary hover:text-primary'
+                  }`}
+                  title="Click to edit deadline"
+                >
+                  {opportunity.deadline
+                    ? `Due ${formatDistanceToNow(new Date(opportunity.deadline), { addSuffix: true })}`
+                    : '+ Set deadline'}
+                </button>
               )}
             </div>
             <h1 className="text-xl sm:text-3xl font-bold text-foreground mb-1 leading-tight">{opportunity.programmeName}</h1>

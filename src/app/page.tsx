@@ -32,6 +32,7 @@ export default function PipelineDashboard() {
   const [intakeError, setIntakeError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -105,7 +106,6 @@ export default function PipelineDashboard() {
   };
 
   const archiveOpportunity = async (id: string) => {
-    setMenuOpen(null);
     try {
       const res = await fetch(`/api/opportunities/${id}`, {
         method: 'PATCH',
@@ -115,6 +115,8 @@ export default function PipelineDashboard() {
       if (res.ok) setOpportunities(prev => prev.filter(o => o._id !== id));
     } catch (err) {
       console.error(err);
+    } finally {
+      setConfirmArchive(null);
     }
   };
 
@@ -184,7 +186,7 @@ export default function PipelineDashboard() {
                       <div
                         key={opp._id}
                         onClick={() => {
-                          if (confirmDelete !== opp._id && menuOpen !== opp._id) router.push(`/opportunity/${opp._id}`);
+                          if (confirmDelete !== opp._id && confirmArchive !== opp._id && menuOpen !== opp._id) router.push(`/opportunity/${opp._id}`);
                         }}
                         className="glass-card p-4 cursor-pointer hover:border-primary/50 relative group"
                       >
@@ -201,6 +203,25 @@ export default function PipelineDashboard() {
                               </button>
                               <button
                                 onClick={() => setConfirmDelete(null)}
+                                className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-elevated text-muted border border-border hover:text-foreground transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : confirmArchive === opp._id ? (
+                          <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
+                            <p className="text-sm font-semibold text-foreground">Archive this application?</p>
+                            <p className="text-xs text-muted line-clamp-1">{opp.programmeName}</p>
+                            <div className="flex gap-2 mt-1">
+                              <button
+                                onClick={() => archiveOpportunity(opp._id)}
+                                className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-colors"
+                              >
+                                Archive
+                              </button>
+                              <button
+                                onClick={() => setConfirmArchive(null)}
                                 className="flex-1 text-xs font-semibold py-1.5 rounded-lg bg-elevated text-muted border border-border hover:text-foreground transition-colors"
                               >
                                 Cancel
@@ -225,7 +246,7 @@ export default function PipelineDashboard() {
                                 {menuOpen === opp._id && (
                                   <div className="absolute right-0 top-full mt-1 z-30 bg-surface border border-border rounded-xl shadow-xl py-1 min-w-[130px]">
                                     <button
-                                      onClick={() => archiveOpportunity(opp._id)}
+                                      onClick={() => { setMenuOpen(null); setConfirmArchive(opp._id); }}
                                       className="w-full text-left px-3 py-2 text-xs font-medium text-muted hover:text-foreground hover:bg-elevated transition-colors flex items-center gap-2"
                                     >
                                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
