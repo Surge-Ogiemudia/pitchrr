@@ -205,7 +205,7 @@ export default function DraftingTab({ opportunity, onUpdate }: Props) {
   const [confirmDeleteDraft, setConfirmDeleteDraft] = useState<number | null>(null);
   const [fallbackText, setFallbackText] = useState('');
   const [extracting, setExtracting] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
+  const [showFallback, setShowFallback] = useState(opportunity.scrapedQuestions?.length === 0);
   const [chatQuestion, setChatQuestion] = useState<ChatQuestion | null>(null);
   const stopSignal = useRef(false);
 
@@ -409,6 +409,16 @@ export default function DraftingTab({ opportunity, onUpdate }: Props) {
             </div>
           )}
 
+          {opportunity.scrapedQuestions?.length === 0 && !showFallback && (
+            <div className="mb-4 p-4 bg-warning/5 border border-warning/20 rounded-xl flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning flex-none mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-warning mb-1">No questions found during scan</p>
+                <p className="text-xs text-muted leading-relaxed">The page that was scanned was likely an overview or landing page. Open the actual application form, copy all the text, and paste it below to extract the questions.</p>
+              </div>
+            </div>
+          )}
+
           {opportunity.scrapedQuestions?.length > 0 ? (
             <div className="space-y-6">
               {opportunity.scrapedQuestions.map((q, idx) => {
@@ -517,16 +527,30 @@ export default function DraftingTab({ opportunity, onUpdate }: Props) {
             <p className="text-sm text-muted">No questions extracted yet. Paste the application form text below to extract them.</p>
           )}
 
-          <div className="mt-8 pt-6 border-t border-border">
+          <div className={opportunity.scrapedQuestions?.length === 0 ? 'mt-4' : 'mt-8 pt-6 border-t border-border'}>
             {!showFallback ? (
-              <button onClick={() => setShowFallback(true)} className="text-sm font-semibold text-primary hover:text-primary-light transition-colors">+ Extract Missing Questions</button>
+              <button onClick={() => setShowFallback(true)} className="text-sm font-semibold text-primary hover:text-primary-light transition-colors">+ Extract Questions from Form Text</button>
             ) : (
-              <div className="bg-elevated p-4 rounded-xl border border-border">
-                <h4 className="text-sm font-bold text-foreground mb-2">Paste Form Questions</h4>
-                <p className="text-xs text-muted mb-4">Paste the raw text of the questions and Pitchrr will extract and structure them.</p>
-                <textarea value={fallbackText} onChange={e => setFallbackText(e.target.value)} placeholder="Paste questions here..." className="w-full h-32 bg-surface border border-border rounded-lg p-3 text-sm focus:outline-none focus:border-primary mb-3" />
+              <div className={`p-4 rounded-xl border ${opportunity.scrapedQuestions?.length === 0 ? 'bg-surface border-primary/30' : 'bg-elevated border-border'}`}>
+                <h4 className="text-sm font-bold text-foreground mb-1">
+                  {opportunity.scrapedQuestions?.length === 0 ? 'Paste the Application Form' : 'Paste Form Questions'}
+                </h4>
+                <p className="text-xs text-muted mb-3">
+                  {opportunity.scrapedQuestions?.length === 0
+                    ? 'Open the actual application form (Google Form, Typeform, or the apply page), select all text, copy it, and paste it here. Pitchrr will extract all the questions automatically.'
+                    : 'Paste the raw text of the questions and Pitchrr will extract and structure them.'}
+                </p>
+                <textarea
+                  value={fallbackText}
+                  onChange={e => setFallbackText(e.target.value)}
+                  placeholder="Paste the full application form text here..."
+                  className="w-full h-36 bg-surface border border-border rounded-lg p-3 text-sm focus:outline-none focus:border-primary mb-3 resize-y"
+                  autoFocus={opportunity.scrapedQuestions?.length === 0}
+                />
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowFallback(false)} className="px-4 py-2 text-xs font-semibold text-muted hover:text-foreground">Cancel</button>
+                  {opportunity.scrapedQuestions?.length > 0 && (
+                    <button onClick={() => setShowFallback(false)} className="px-4 py-2 text-xs font-semibold text-muted hover:text-foreground">Cancel</button>
+                  )}
                   <button onClick={handleManualExtract} disabled={extracting || !fallbackText.trim()} className="px-4 py-2 text-xs font-semibold bg-primary text-[#0A0A0F] rounded-lg disabled:opacity-50 flex items-center gap-2">
                     {extracting ? <><span className="w-2 h-2 rounded-full border-2 border-[#0A0A0F] border-t-transparent animate-spin" /> Extracting...</> : 'Extract Questions'}
                   </button>

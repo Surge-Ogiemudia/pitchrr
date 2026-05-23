@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import Opportunity from '@/models/Opportunity';
 import { getStartupProfileModel } from '@/models/StartupProfile';
-import { streamText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
+import { streamWithFallback } from '@/lib/ai/models';
 
 export const maxDuration = 60;
 
@@ -36,8 +35,7 @@ Ignore the STRATEGY instruction above. Output ONLY the final draft answer text. 
       ? `Word limit: ${q.wordLimit} words — stay within it, aim for 85–95% of the limit.`
       : `No word limit stated — infer the correct length from the question type. Personal/factual fields (name, email, phone, age, date, ID): one value only. Short-answer fields (stage, industry, availability): one phrase or sentence. Only write multiple paragraphs if the question explicitly asks for description or explanation.`;
 
-    const result = streamText({
-      model: anthropic('claude-sonnet-4-6'),
+    const result = streamWithFallback({
       system: systemPrompt,
       prompt: `Question: ${q.question}\n${lengthHint}\n\nOutput ONLY the answer text. No headers, no strategy.`,
       temperature: 0.7,

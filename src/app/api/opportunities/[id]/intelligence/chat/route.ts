@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import { getStartupProfileModel } from '@/models/StartupProfile';
 import Opportunity from '@/models/Opportunity';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
+import { streamWithFallback } from '@/lib/ai/models';
 
 export const maxDuration = 60;
 
@@ -46,8 +46,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       .map((m: any) => ({ role: m.role as 'user' | 'assistant', content: getContent(m) }))
       .filter((m: any) => m.content.trim() !== '');
 
-    const result = streamText({
-      model: anthropic('claude-sonnet-4-6'),
+    const result = streamWithFallback({
       system: systemPrompt,
       messages: aiMessages,
       maxOutputTokens: 2048,

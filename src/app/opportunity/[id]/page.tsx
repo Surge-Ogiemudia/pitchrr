@@ -204,7 +204,15 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
         <div className="flex flex-col sm:flex-row gap-3 mb-6 p-4 rounded-2xl border border-border bg-surface/50">
           <div className="flex-1 flex flex-col gap-2">
             <p className="text-[10px] font-semibold text-subtle uppercase tracking-wider">In a hurry</p>
-            {draftCount >= questionCount && questionCount > 0 ? (
+            {questionCount === 0 ? (
+              <button
+                onClick={() => setActiveTab('drafting')}
+                className="px-4 py-2.5 rounded-xl bg-warning/10 border border-warning/30 text-warning font-semibold text-sm text-left transition-all active:scale-95 flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                No questions found — paste form text
+              </button>
+            ) : draftCount >= questionCount ? (
               <Link
                 href="/fill"
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm text-center transition-all active:scale-95"
@@ -217,7 +225,7 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
                 disabled={quickDrafting}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm disabled:opacity-60 transition-all active:scale-95"
               >
-                {quickDrafting ? 'Drafting answers...' : questionCount === 0 ? 'Draft All & Fill' : `Draft ${questionCount - draftCount} answer${questionCount - draftCount !== 1 ? 's' : ''} & Fill`}
+                {quickDrafting ? 'Drafting answers...' : `Draft ${questionCount - draftCount} answer${questionCount - draftCount !== 1 ? 's' : ''} & Fill`}
               </button>
             )}
             {quickDraftMsg && (

@@ -1,5 +1,5 @@
-import { anthropic } from '@ai-sdk/anthropic';
 import { streamText, tool, zodSchema } from 'ai';
+import { streamWithFallback } from './models';
 import { z } from 'zod';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import { getStartupProfileModel, TRACKED_PROFILE_FIELDS } from '@/models/StartupProfile';
@@ -186,14 +186,13 @@ IMPORTANT: Call this immediately whenever the founder shares ANY personal or bus
     .map((m: any) => ({ role: m.role as 'user' | 'assistant', content: getContent(m) }))
     .filter((m: any) => m.content.trim() !== '');
 
-  const result = streamText({
-    model: anthropic('claude-sonnet-4-6'),
+  const result = streamWithFallback({
     system: systemPrompt,
     messages: aiMessages,
     ...(Object.keys(tools).length > 0 ? { tools } : {}),
     maxOutputTokens: 4096,
     temperature: 0.7,
-  } as Parameters<typeof streamText>[0]);
+  } as any);
 
   return result;
 }

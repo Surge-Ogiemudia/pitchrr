@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 
@@ -24,6 +24,11 @@ export default function FillPage() {
   const [msg, setMsg] = useState<{ type: 'info' | 'ok' | 'err'; text: string } | null>(null);
   const [pasteText, setPasteText] = useState('');
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+  // Sequential fill mode
+  const [seqMode, setSeqMode] = useState(false);
+  const [seqIdx, setSeqIdx] = useState(0);
+  const [seqCopied, setSeqCopied] = useState(false);
 
   useEffect(() => {
     fetch('/api/opportunities')
@@ -85,11 +90,140 @@ export default function FillPage() {
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
+  const copyAll = async (opp: Opp) => {
+    const lines: string[] = [];
+    opp.scrapedQuestions.forEach((q, idx) => {
+      const draft = opp.draftedAnswers?.find(a => a.questionIndex === idx);
+      if (draft) {
+        lines.push(`Q${idx + 1}: ${q.question}`);
+        lines.push(draft.content);
+        lines.push('');
+      }
+    });
+    await navigator.clipboard.writeText(lines.join('\n').trim());
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2500);
+  };
+
+  const enterSeqMode = useCallback(async (opp: Opp, startIdx = 0) => {
+    setSeqIdx(startIdx);
+    setSeqMode(true);
+    setSeqCopied(false);
+    // Auto-copy the first answer
+    const draft = opp.draftedAnswers?.find(a => a.questionIndex === startIdx);
+    if (draft) {
+      await navigator.clipboard.writeText(draft.content);
+      setSeqCopied(true);
+    }
+  }, []);
+
+  const seqNext = useCallback(async (opp: Opp, nextIdx: number) => {
+    setSeqIdx(nextIdx);
+    setSeqCopied(false);
+    const draft = opp.draftedAnswers?.find(a => a.questionIndex === nextIdx);
+    if (draft) {
+      await navigator.clipboard.writeText(draft.content);
+      setSeqCopied(true);
+    }
+  }, []);
+
   const msgClass = msg?.type === 'ok'
     ? 'bg-success/10 border-success/20 text-success'
     : msg?.type === 'err'
     ? 'bg-danger/10 border-danger/20 text-danger'
     : 'bg-primary/10 border-primary/20 text-primary';
+
+  // ── Sequential fill mode ──
+  if (selected && seqMode) {
+    const questions = selected.scrapedQuestions || [];
+    const q = questions[seqIdx];
+    const draft = selected.draftedAnswers?.find(a => a.questionIndex === seqIdx);
+    const isLast = seqIdx === questions.length - 1;
+
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <main className="max-w-lg mx-auto px-4 sm:px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setSeqMode(false)}
+              className="text-sm text-muted hover:text-foreground transition-colors"
+            >
+              ← Back to all answers
+            </button>
+            <span className="text-xs font-semibold text-subtle bg-elevated px-3 py-1.5 rounded-full border border-border">
+              {seqIdx + 1} / {questions.length}
+            </span>
+          </div>
+
+          {/* Progress dots */}
+          <div className="flex gap-1.5 mb-6 justify-center">
+            {questions.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i < seqIdx ? 'bg-success flex-1' :
+                  i === seqIdx ? 'bg-primary flex-[2]' :
+                  'bg-elevated flex-1'
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="glass-card p-5 mb-4">
+            <p className="text-[10px] font-semibold text-subtle uppercase tracking-wider mb-2">
+              Question {seqIdx + 1}{q?.wordLimit ? ` · ${q.wordLimit} words` : ''}
+            </p>
+            <p className="text-sm text-foreground leading-relaxed mb-4">{q?.question}</p>
+
+            {draft ? (
+              <div className="bg-elevated rounded-xl px-4 py-3 border border-border">
+                <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap">{draft.content}</p>
+              </div>
+            ) : (
+              <p className="text-xs text-subtle italic">No answer drafted for this question.</p>
+            )}
+          </div>
+
+          {/* Clipboard status */}
+          <div className={`flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
+            seqCopied
+              ? 'bg-success/10 border-success/20 text-success'
+              : 'bg-elevated border-border text-subtle'
+          }`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {seqCopied
+                ? <><polyline points="20 6 9 17 4 12"/></>
+                : <><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>
+              }
+            </svg>
+            {seqCopied ? 'Answer copied — switch to the form and paste' : 'Copying to clipboard...'}
+          </div>
+
+          {isLast ? (
+            <button
+              onClick={() => setSeqMode(false)}
+              className="w-full py-4 rounded-xl bg-success/15 text-success border border-success/30 font-bold text-sm transition-all active:scale-95"
+            >
+              Done — all answers filled
+            </button>
+          ) : (
+            <button
+              onClick={() => seqNext(selected, seqIdx + 1)}
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              Next answer
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          )}
+
+          <p className="text-center text-[10px] text-subtle mt-3">
+            Tap Next, switch to your form, paste (Cmd+V / long-press), come back and repeat
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   // ── Detail view ──
   if (selected) {
@@ -151,6 +285,34 @@ export default function FillPage() {
                   ? 'Draft All Answers'
                   : `Draft Remaining ${undrafted} Answer${undrafted !== 1 ? 's' : ''}`}
             </button>
+          )}
+
+          {/* Fill actions — shown when all drafted */}
+          {allDrafted && (
+            <div className="flex gap-2 mb-5">
+              <button
+                onClick={() => enterSeqMode(selected, 0)}
+                className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Fill one by one
+              </button>
+              <button
+                onClick={() => copyAll(selected)}
+                className={`px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
+                  copiedAll
+                    ? 'bg-success/15 text-success border-success/30'
+                    : 'bg-elevated text-muted border-border hover:text-foreground hover:border-primary/50'
+                }`}
+                title="Copy all Q&As to clipboard"
+              >
+                {copiedAll ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                )}
+              </button>
+            </div>
           )}
 
           {/* Questions + answers */}
@@ -235,8 +397,8 @@ export default function FillPage() {
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full status-${opp.status}`}>
                       {opp.status.toUpperCase()}
                     </span>
-                    <span className={`text-[10px] font-semibold ${ready ? 'text-success' : 'text-muted'}`}>
-                      {total === 0 ? 'No questions yet' : ready ? 'Ready to fill' : `${drafted}/${total} drafted`}
+                    <span className={`text-[10px] font-semibold ${ready ? 'text-success' : total === 0 ? 'text-warning' : 'text-muted'}`}>
+                      {total === 0 ? 'Needs form text' : ready ? 'Ready to fill' : `${drafted}/${total} drafted`}
                     </span>
                   </div>
                   <p className="font-semibold text-foreground text-sm leading-snug mb-0.5">{opp.programmeName}</p>
