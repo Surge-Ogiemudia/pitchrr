@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -222,9 +223,16 @@ export default function PipelineDashboard() {
                       <span className={`w-2.5 h-2.5 rounded-full status-${col.id} bg-current border border-current`} />
                       {col.label}
                     </h3>
-                    <span className="text-xs font-medium text-muted bg-elevated px-2 py-0.5 rounded-full">
-                      {colOpps.length}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {col.id === 'discovered' && (
+                        <Link href="/archive" className="text-[10px] font-medium text-subtle hover:text-muted transition-colors">
+                          Archive →
+                        </Link>
+                      )}
+                      <span className="text-xs font-medium text-muted bg-elevated px-2 py-0.5 rounded-full">
+                        {colOpps.length}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="flex flex-col gap-3 min-h-[200px] p-2 -mx-2 rounded-xl bg-surface/50">

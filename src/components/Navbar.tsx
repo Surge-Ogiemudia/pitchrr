@@ -9,7 +9,6 @@ export default function Navbar() {
   const links = [
     { href: '/', label: 'Pipeline', icon: '⚡' },
     { href: '/fill', label: 'Fill', icon: '⬡' },
-    { href: '/archive', label: 'Archive', icon: '◫' },
     { href: '/profile', label: 'Profile', icon: '◉' },
   ];
 
