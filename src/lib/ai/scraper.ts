@@ -1,7 +1,6 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
 import { buildSystemPrompt } from './prompts';
-import { withFallback } from './models';
+import { generateObjectWithFallback } from './models';
 
 export const OpportunityIntakeSchema = z.object({
   programmeName: z.string(),
@@ -24,13 +23,11 @@ export type OpportunityIntakeResult = z.infer<typeof OpportunityIntakeSchema>;
 export async function scrapeAndExtractOpportunity(url: string, rawText: string): Promise<OpportunityIntakeResult> {
   const systemPrompt = buildSystemPrompt({ mode: 'intake' });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: systemPrompt,
     prompt: `Extract the opportunity details from the following raw text scraped from ${url}:\n\n${rawText}`,
     schema: OpportunityIntakeSchema,
-    maxRetries: 2,
-  }));
+  });
 
   return object;
 }
@@ -48,13 +45,11 @@ export const QuestionExtractionSchema = z.object({
 export async function extractQuestionsFromText(rawText: string) {
   const systemPrompt = buildSystemPrompt({ mode: 'extract_questions' });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: systemPrompt,
     prompt: `Extract the questions from this text:\n\n${rawText}`,
     schema: QuestionExtractionSchema,
-    maxRetries: 2,
-  }));
+  });
 
   return object.scrapedQuestions;
 }

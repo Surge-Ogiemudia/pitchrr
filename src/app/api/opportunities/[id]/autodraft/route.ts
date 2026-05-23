@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import Opportunity from '@/models/Opportunity';
 import { getStartupProfileModel } from '@/models/StartupProfile';
-import { generateText } from 'ai';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import { maybeEnrichProfile } from '@/lib/ai/profile-enrichment';
-import { withFallback } from '@/lib/ai/models';
+import { generateTextWithFallback } from '@/lib/ai/models';
 
 export const maxDuration = 60; // Allow more time for batch drafting
 
@@ -53,13 +52,11 @@ Word Limit: ${q.wordLimit ? `${q.wordLimit} words` : 'None'}
 Output ONLY the final draft answer text. No headers, no "DRAFT" labels, no strategy explanations, no commentary. Just the ready-to-submit answer.
 ABSOLUTE RULE: Never use the em dash character (—) anywhere. Use a comma, period, or short sentence break instead.`;
 
-      const { text } = await withFallback(model => generateText({
-        model,
+      const text = await generateTextWithFallback({
         system: systemPrompt,
         prompt: 'Please draft the best possible answer for this question using my profile context.',
-        maxRetries: 2,
         temperature: 0.7,
-      }));
+      });
 
       opportunity.draftedAnswers.push({
         questionIndex: idx,

@@ -1,8 +1,7 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
 import { IStartupProfile } from '@/models/StartupProfile';
 import { IOpportunity } from '@/models/Opportunity';
-import { withFallback } from './models';
+import { generateObjectWithFallback } from './models';
 
 const BASE_IDENTITY = `You are Pitchrr, a world-class strategic application intelligence engine.
 You are brutally honest, highly analytical, and deeply strategic.
@@ -68,8 +67,7 @@ export async function generateEvaluationFramework(profile: IStartupProfile, oppo
     })),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Decode the evaluation framework for this programme. Based on their stated criteria, language patterns, past selections (if known), and organisational DNA, determine HOW they actually score applications.
 
@@ -77,7 +75,7 @@ Provide: a plain-language summary of how they score, a breakdown of the implicit
 
 Also list 2-4 specific improvement tasks: things the founder should find or do to give this analysis more accuracy.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -95,8 +93,7 @@ export async function generateAlignmentMap(profile: IStartupProfile, opportunity
     ? `\nEVALUATION FRAMEWORK (already decoded):\n${evalFramework.weights.map((w: any) => `${w.category} (${w.weight}%): ${w.rationale}`).join('\n')}`
     : '';
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}${frameworkContext}`,
     prompt: `Build a complete alignment evidence map for this application.
 
@@ -104,7 +101,7 @@ For every evaluation criterion this programme uses (explicit and implicit), iden
 
 Be specific and honest. A weak proof point is still a gap. Do not claim strength where there is only surface-level coverage.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -116,8 +113,7 @@ export async function generateRedFlags(profile: IStartupProfile, opportunity: IO
     severity: z.enum(['low', 'medium', 'high']),
   }));
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Identify every red flag a reviewer at this programme would see in this founder's application.
 
@@ -127,7 +123,7 @@ For each red flag, provide: the specific concern a reviewer would have, a concre
 
 Be brutally honest. Do not soften real problems.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -145,8 +141,7 @@ export async function generateProgrammeVibe(opportunity: IOpportunity) {
     })),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Decode the cultural vibe of this programme and what type of founder they consistently select.
 
@@ -154,7 +149,7 @@ Every programme has an implicit personality: some reward polish and investor-rea
 
 Provide: the overall tone they respond to, the energy level they prefer (data-heavy vs. story-first vs. balanced), specific positioning guidance for how to frame this founder's identity to feel like "one of theirs", language they use and reward (use these), and language to avoid (these will feel off-brand).`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -172,8 +167,7 @@ export async function generateReviewerPersona(opportunity: IOpportunity) {
     })),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Build a reviewer persona for this programme based on everything known about the organisation and their selection committee.
 
@@ -183,7 +177,7 @@ Provide: the reviewer's name or archetype title, their background and how it sha
 
 List improvement tasks: things the founder could find (LinkedIn, talks, articles) to make this persona more accurate.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -199,8 +193,7 @@ export async function generateCompetitiveIntel(profile: IStartupProfile, opportu
     })),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Analyse the competitive field for this specific application.
 
@@ -210,7 +203,7 @@ Then identify: the founder's genuine differentiators against that specific appli
 
 Be realistic. Do not inflate weak differentiation. If the competitive position is weak, say so and explain why.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -223,8 +216,7 @@ export async function generateSocialCapital(profile: IStartupProfile, opportunit
     messageDraft: z.string(),
   }));
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Identify social capital opportunities for this application.
 
@@ -232,7 +224,7 @@ Based on the founder's background, network signals (WHO, pharmacist community, h
 
 If no direct connections are obvious, suggest the types of people to actively find and connect with before submitting, and how.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -243,8 +235,7 @@ export async function generateUnfairAdvantages(profile: IStartupProfile, opportu
     primaryAdvantage: z.string(),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Surface the founder's unfair advantages for this specific application.
 
@@ -252,7 +243,7 @@ An unfair advantage is something about this founder and this startup that most o
 
 List every unfair advantage you can identify, from most powerful to least powerful. Then identify the single primary unfair advantage that should be made visible in the opening of the application and woven throughout every answer.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -267,8 +258,7 @@ export async function generateTimingContext(opportunity: IOpportunity, currentDa
     })),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}\n\nCurrent Date: ${currentDate}`,
     prompt: `Identify current events, trends, reports, or policy changes (as of ${currentDate}) that make this founder's solution more urgent and relevant RIGHT NOW.
 
@@ -278,7 +268,7 @@ Provide: a list of specific current events or reports (with approximate dates wh
 
 List improvement tasks for finding the most current and credible sources.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -294,8 +284,7 @@ export async function generateAskCalibration(profile: IStartupProfile, opportuni
     })),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nFOUNDER PROFILE:\n${buildProfileSummary(profile)}\n\nOPPORTUNITY:\n${buildOpportunitySummary(opportunity)}`,
     prompt: `Calibrate the funding ask for this specific application.
 
@@ -305,7 +294,7 @@ If this is a fixed prize (no variable ask), say so explicitly and explain how th
 
 Be precise. A vague "it depends" answer is useless. Give a specific number or range with a concrete rationale tied to the founder's actual situation and this programme's known behaviour.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -360,8 +349,7 @@ export async function generateApplicationReview(
     strengths: z.array(z.string()),
   });
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}
 
 FOUNDER PROFILE:
@@ -384,7 +372,7 @@ Assess:
 
 Be direct. The founder is about to submit this. They need truth, not comfort.`,
     schema,
-  }));
+  });
 
   return object;
 }
@@ -408,8 +396,7 @@ export async function extractWinnersFromLog(opportunity: IOpportunity) {
 
   const conversationText = log.map((m: any) => `${m.role === 'user' ? 'Founder' : 'Analysis'}: ${m.content}`).join('\n');
 
-  const { object } = await withFallback(model => generateObject({
-    model,
+  const object = await generateObjectWithFallback({
     system: `${BASE_IDENTITY}\n\nOPPORTUNITY: ${opportunity.programmeName} by ${opportunity.organisation}`,
     prompt: `From the following research conversation, extract all past winners or selectees that were discussed and build a winner archetype.
 
@@ -420,7 +407,7 @@ For each winner mentioned, extract: their name/company, where the data came from
 
 Then build a winner archetype: the common traits across all winners, their typical stage at selection, and the key alignment signals (what they all had that earned their selection).`,
     schema,
-  }));
+  });
 
   return object;
 }
