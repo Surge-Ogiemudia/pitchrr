@@ -47,19 +47,51 @@ export default function FillPage() {
 
   const draftAll = async (opp: Opp) => {
     setDrafting(true);
-    setMsg({ type: 'info', text: 'Writing answers using your profile — takes about 30 seconds...' });
-    try {
-      const res = await fetch(`/api/opportunities/${opp._id}/autodraft`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) { setMsg({ type: 'err', text: data.error || 'Drafting failed' }); return; }
-      const updated = await reload(opp._id);
-      if (updated) setSelected(updated);
-      setMsg({ type: 'ok', text: `${data.count} answer${data.count !== 1 ? 's' : ''} drafted. Ready to copy.` });
-    } catch {
-      setMsg({ type: 'err', text: 'Network error during drafting' });
-    } finally {
-      setDrafting(false);
+    const total = opp.scrapedQuestions?.length || 0;
+    let draftedSoFar = opp.draftedAnswers?.length || 0;
+    const needed = total - draftedSoFar;
+    let justDrafted = 0;
+
+    for (let i = 0; i < needed; i++) {
+      setMsg({ type: 'info', text: `Drafting answer ${draftedSoFar + 1} of ${total}...` });
+      try {
+        const res = await fetch(`/api/opportunities/${opp._id}/autodraft`, { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const alreadyDone = justDrafted > 0;
+          setMsg({
+            type: alreadyDone ? 'ok' : 'err',
+            text: alreadyDone
+              ? `${justDrafted} answer${justDrafted !== 1 ? 's' : ''} drafted. Tap again to continue.`
+              : (data.error || 'Drafting failed — tap again to retry'),
+          });
+          const updated = await reload(opp._id);
+          if (updated) setSelected(updated);
+          setDrafting(false);
+          return;
+        }
+        draftedSoFar++;
+        justDrafted++;
+        const updated = await reload(opp._id);
+        if (updated) setSelected(updated);
+        if (data.remaining === 0) break;
+      } catch {
+        const alreadyDone = justDrafted > 0;
+        setMsg({
+          type: alreadyDone ? 'ok' : 'err',
+          text: alreadyDone
+            ? `${justDrafted} answer${justDrafted !== 1 ? 's' : ''} drafted. Tap again to continue.`
+            : 'Connection timed out — tap again to continue',
+        });
+        const updated = await reload(opp._id);
+        if (updated) setSelected(updated);
+        setDrafting(false);
+        return;
+      }
     }
+
+    setMsg({ type: 'ok', text: `All ${total} answers drafted. Ready to fill.` });
+    setDrafting(false);
   };
 
   const extractAndDraft = async (opp: Opp) => {
