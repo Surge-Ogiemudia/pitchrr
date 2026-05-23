@@ -28,6 +28,8 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [deadlineInput, setDeadlineInput] = useState('');
   const [savingDeadline, setSavingDeadline] = useState(false);
+  const [quickDrafting, setQuickDrafting] = useState(false);
+  const [quickDraftMsg, setQuickDraftMsg] = useState('');
   const router = useRouter();
 
   const handleStatusChange = async (newStatus: string) => {
@@ -77,6 +79,23 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
       }
     } finally {
       setSavingDeadline(false);
+    }
+  };
+
+  const quickDraftAll = async () => {
+    setQuickDrafting(true);
+    setQuickDraftMsg('Writing answers using your profile...');
+    try {
+      const res = await fetch(`/api/opportunities/${id}/autodraft`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setQuickDraftMsg(data.error || 'Drafting failed'); return; }
+      const updated = await fetch(`/api/opportunities/${id}`).then(r => r.json());
+      setOpportunity(updated);
+      router.push('/fill');
+    } catch {
+      setQuickDraftMsg('Network error — try again');
+    } finally {
+      setQuickDrafting(false);
     }
   };
 
@@ -178,6 +197,37 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
               {scores.overall}
             </div>
             <span className="text-[10px] text-muted mt-1 font-medium uppercase tracking-wider">Intel Score</span>
+          </div>
+        </div>
+
+        {/* Two-path action strip */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6 p-4 rounded-2xl border border-border bg-surface/50">
+          <div className="flex-1 flex flex-col gap-2">
+            <p className="text-[10px] font-semibold text-subtle uppercase tracking-wider">In a hurry</p>
+            {draftCount >= questionCount && questionCount > 0 ? (
+              <Link
+                href="/fill"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm text-center transition-all active:scale-95"
+              >
+                Go to Fill — answers ready
+              </Link>
+            ) : (
+              <button
+                onClick={quickDraftAll}
+                disabled={quickDrafting}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm disabled:opacity-60 transition-all active:scale-95"
+              >
+                {quickDrafting ? 'Drafting answers...' : questionCount === 0 ? 'Draft All & Fill' : `Draft ${questionCount - draftCount} answer${questionCount - draftCount !== 1 ? 's' : ''} & Fill`}
+              </button>
+            )}
+            {quickDraftMsg && (
+              <p className="text-xs text-muted">{quickDraftMsg}</p>
+            )}
+          </div>
+          <div className="hidden sm:flex items-center text-subtle text-xs font-medium px-2">or</div>
+          <div className="flex-1 flex flex-col gap-1.5 justify-center">
+            <p className="text-[10px] font-semibold text-subtle uppercase tracking-wider">Going deep</p>
+            <p className="text-xs text-muted leading-relaxed">Work through Intelligence, Strategy and Drafting below for stronger, tailored answers.</p>
           </div>
         </div>
 
