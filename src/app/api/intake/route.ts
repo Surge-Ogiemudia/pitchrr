@@ -59,6 +59,18 @@ async function fetchUrlContent(url: string): Promise<string> {
   throw new Error('Could not retrieve content from that URL. Please paste the opportunity text directly instead.');
 }
 
+function parseDeadline(raw: string | null): Date | null {
+  if (!raw) return null;
+  // ISO format returned by AI (YYYY-MM-DD or full ISO string)
+  const d = new Date(raw);
+  if (!isNaN(d.getTime())) return d;
+  // Try common human-readable formats the AI might still slip through
+  const cleaned = raw.trim().replace(/(\d+)(st|nd|rd|th)/i, '$1');
+  const d2 = new Date(cleaned);
+  if (!isNaN(d2.getTime())) return d2;
+  return null;
+}
+
 export async function POST(req: Request) {
   try {
     const { url, rawText: providedRawText } = await req.json();
@@ -93,7 +105,7 @@ export async function POST(req: Request) {
       programmeName: intakeResult.programmeName,
       organisation: intakeResult.organisation,
       url: finalUrl,
-      deadline: intakeResult.deadline ? new Date(intakeResult.deadline) : null,
+      deadline: parseDeadline(intakeResult.deadline),
       prizeAmount: intakeResult.prizeAmount,
       eligibilityCriteria: intakeResult.eligibilityCriteria,
       evaluationCriteria: intakeResult.evaluationCriteria,

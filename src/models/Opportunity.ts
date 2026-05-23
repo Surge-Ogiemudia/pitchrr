@@ -95,6 +95,7 @@ export interface IOpportunity extends Document {
     scheduledDate: Date;
     posted: boolean;
   }[];
+  archived: boolean;
   notes: string;
   submissionDate: Date | null;
   opportunityDnaLog: { role: 'user' | 'assistant'; content: string; timestamp: Date }[];
@@ -258,6 +259,7 @@ const OpportunitySchema = new Schema({
     scheduledDate: Date,
     posted: { type: Boolean, default: false },
   }],
+  archived: { type: Boolean, default: false },
   notes: { type: String, default: '' },
   submissionDate: { type: Date, default: null },
   opportunityDnaLog: {

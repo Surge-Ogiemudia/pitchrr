@@ -64,10 +64,13 @@ Evaluation Criteria: ${opportunity.evaluationCriteria}
 -------------------------------` : '';
 
   if (mode === 'intake') {
+    const today = new Date().toISOString().split('T')[0];
     return `${baseIdentity}
 
 You are in INTAKE mode. Your job is to analyze a new grant or accelerator opportunity and figure out exactly what they want.
 You will receive raw scraped text from an opportunity website (this may be a direct copy-paste from a Google Form or Typeform).
+
+TODAY'S DATE: ${today}
 
 Your task is to extract:
 1. Programme Name and Organisation
@@ -76,6 +79,11 @@ Your task is to extract:
 4. Eligibility Criteria
 5. Evaluation Criteria (what do the reviewers care about most?)
 6. All application questions (with their word limits and section names)
+
+CRITICAL INSTRUCTIONS FOR DEADLINE:
+- Always return deadline as a strict ISO 8601 string in YYYY-MM-DD format (e.g., "2025-09-30"). Never return a human-readable date string.
+- Today is ${today}. If only a month and day are given with no year, pick the next upcoming occurrence of that date relative to today.
+- If no deadline is found anywhere in the text, return null.
 
 CRITICAL INSTRUCTIONS FOR RAW FORM TEXT:
 - If the user pasted a raw Google Form, it often looks like "Question text * \n Your answer". Treat these labels as the actual application questions.

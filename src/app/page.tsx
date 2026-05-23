@@ -30,12 +30,20 @@ export default function PipelineDashboard() {
   const [inputData, setInputData] = useState('');
   const [processingUrl, setProcessingUrl] = useState(false);
   const [intakeError, setIntakeError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchOpportunities();
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [menuOpen]);
 
   const fetchOpportunities = async () => {
     try {
@@ -88,13 +96,25 @@ export default function PipelineDashboard() {
   const deleteOpportunity = async (id: string) => {
     try {
       const res = await fetch(`/api/opportunities/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setOpportunities(prev => prev.filter(o => o._id !== id));
-      }
+      if (res.ok) setOpportunities(prev => prev.filter(o => o._id !== id));
     } catch (err) {
       console.error(err);
     } finally {
       setConfirmDelete(null);
+    }
+  };
+
+  const archiveOpportunity = async (id: string) => {
+    setMenuOpen(null);
+    try {
+      const res = await fetch(`/api/opportunities/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: true }),
+      });
+      if (res.ok) setOpportunities(prev => prev.filter(o => o._id !== id));
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -163,12 +183,14 @@ export default function PipelineDashboard() {
                     {colOpps.map(opp => (
                       <div
                         key={opp._id}
-                        onClick={() => { if (confirmDelete !== opp._id) router.push(`/opportunity/${opp._id}`); }}
+                        onClick={() => {
+                          if (confirmDelete !== opp._id && menuOpen !== opp._id) router.push(`/opportunity/${opp._id}`);
+                        }}
                         className="glass-card p-4 cursor-pointer hover:border-primary/50 relative group"
                       >
                         {confirmDelete === opp._id ? (
                           <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
-                            <p className="text-sm font-semibold text-foreground">Delete this application?</p>
+                            <p className="text-sm font-semibold text-foreground">Delete permanently?</p>
                             <p className="text-xs text-muted line-clamp-1">{opp.programmeName}</p>
                             <div className="flex gap-2 mt-1">
                               <button
@@ -191,18 +213,34 @@ export default function PipelineDashboard() {
                               <span className={`text-xs font-semibold ${opp.deadline && new Date(opp.deadline) < new Date() ? 'text-danger' : 'text-muted'}`}>
                                 {getDeadlineText(opp.deadline)}
                               </span>
-                              <button
-                                onClick={e => { e.stopPropagation(); setConfirmDelete(opp._id); }}
-                                className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all"
-                                title="Delete"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="3 6 5 6 21 6" />
-                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                  <path d="M10 11v6M14 11v6" />
-                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                                </svg>
-                              </button>
+                              {/* Action menu */}
+                              <div className="relative" onClick={e => e.stopPropagation()}>
+                                <button
+                                  onClick={() => setMenuOpen(v => v === opp._id ? null : opp._id)}
+                                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-foreground transition-all p-0.5 rounded"
+                                  title="Actions"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                                </button>
+                                {menuOpen === opp._id && (
+                                  <div className="absolute right-0 top-full mt-1 z-30 bg-surface border border-border rounded-xl shadow-xl py-1 min-w-[130px]">
+                                    <button
+                                      onClick={() => archiveOpportunity(opp._id)}
+                                      className="w-full text-left px-3 py-2 text-xs font-medium text-muted hover:text-foreground hover:bg-elevated transition-colors flex items-center gap-2"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                                      Archive
+                                    </button>
+                                    <button
+                                      onClick={() => { setMenuOpen(null); setConfirmDelete(opp._id); }}
+                                      className="w-full text-left px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 transition-colors flex items-center gap-2"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             <h4 className="font-medium text-foreground line-clamp-2 leading-snug mb-1">
                               {opp.programmeName}
