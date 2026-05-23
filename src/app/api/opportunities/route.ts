@@ -7,7 +7,8 @@ export async function GET(req: Request) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const archived = searchParams.get('archived') === 'true';
-    const opportunities = await Opportunity.find({ archived }).sort({ createdAt: -1 }).lean();
+    const query = archived ? { archived: true } : { archived: { $ne: true } };
+    const opportunities = await Opportunity.find(query).sort({ createdAt: -1 }).lean();
     return NextResponse.json(opportunities);
   } catch (error) {
     console.error('Failed to fetch opportunities:', error);

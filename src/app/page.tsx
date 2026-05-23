@@ -238,7 +238,7 @@ export default function PipelineDashboard() {
                               <div className="relative" onClick={e => e.stopPropagation()}>
                                 <button
                                   onClick={() => setMenuOpen(v => v === opp._id ? null : opp._id)}
-                                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-foreground transition-all p-0.5 rounded"
+                                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-muted hover:text-foreground transition-all p-0.5 rounded"
                                   title="Actions"
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
