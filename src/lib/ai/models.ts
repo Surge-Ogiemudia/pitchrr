@@ -3,7 +3,7 @@ import { google } from '@ai-sdk/google';
 import { generateText, generateObject, streamText } from 'ai';
 
 export const primaryModel = () => anthropic('claude-sonnet-4-6');
-export const fallbackModel = () => google('gemini-2.0-flash');
+export const fallbackModel = () => google('gemini-1.5-flash');
 
 type GenerateTextParams = Parameters<typeof generateText>[0];
 type GenerateObjectParams = Parameters<typeof generateObject>[0];
