@@ -355,23 +355,23 @@ export default function IntelligenceTab({ opportunity, onUpdate }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="glass-card p-5 flex items-center justify-between gap-6">
+      <div className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
         <div className="flex items-center gap-4 flex-1">
-          <div className="text-center">
-            <div className={`text-3xl font-bold ${overallColor}`}>{scores.overall}%</div>
-            <div className="text-xs text-muted mt-0.5">Intelligence Ready</div>
+          <div className="text-center shrink-0">
+            <div className={`text-2xl sm:text-3xl font-bold ${overallColor}`}>{scores.overall}%</div>
+            <div className="text-xs text-muted mt-0.5">Intel Ready</div>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="w-full bg-elevated rounded-full h-2 mb-2">
               <div className={`h-2 rounded-full transition-all ${scores.overall >= 70 ? 'bg-success' : scores.overall >= 40 ? 'bg-warning' : 'bg-danger'}`} style={{ width: `${scores.overall}%` }} />
             </div>
-            <p className="text-xs text-muted">{completeSections} of 12 sections have data. Stronger intelligence = stronger drafts.</p>
+            <p className="text-xs text-muted">{completeSections} of 12 sections have data.</p>
           </div>
         </div>
         <button
           onClick={generateAll}
           disabled={generatingAll || !!generatingSection}
-          className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+          className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
         >
           {generatingAll ? <><Spinner /> Generating...</> : 'Generate All Analysis'}
         </button>
@@ -648,7 +648,7 @@ export default function IntelligenceTab({ opportunity, onUpdate }: Props) {
             )}
           </GeneratedCard>
 
-          <div className="md:col-start-2">
+          <div>
             <GeneratedCard
               title="Ask Calibration"
               score={scores.askCalibration}

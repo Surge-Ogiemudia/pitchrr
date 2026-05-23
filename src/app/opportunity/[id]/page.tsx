@@ -75,8 +75,8 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
           ← Back to Pipeline
         </Link>
 
-        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
-          <div>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               {/* Clickable status badge */}
               <div className="relative">
@@ -103,38 +103,40 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
                 )}
               </div>
               {opportunity.deadline && (
-                <span className="text-sm font-medium text-warning bg-warning/10 px-3 py-1 rounded-full">
+                <span className="text-xs sm:text-sm font-medium text-warning bg-warning/10 px-3 py-1 rounded-full">
                   Due {formatDistanceToNow(new Date(opportunity.deadline), { addSuffix: true })}
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">{opportunity.programmeName}</h1>
-            <p className="text-lg text-muted">{opportunity.organisation}</p>
+            <h1 className="text-xl sm:text-3xl font-bold text-foreground mb-1 leading-tight">{opportunity.programmeName}</h1>
+            <p className="text-sm sm:text-lg text-muted">{opportunity.organisation}</p>
           </div>
 
-          <div className="flex flex-col items-center">
-            <div className={`w-16 h-16 rounded-full border-2 flex items-center justify-center text-lg font-bold ${scores.overall >= 70 ? 'border-success text-success shadow-[0_0_15px_rgba(16,185,129,0.15)]' : scores.overall >= 40 ? 'border-warning text-warning' : 'border-border text-muted'}`}>
+          <div className="flex flex-col items-center shrink-0">
+            <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 flex items-center justify-center text-base sm:text-lg font-bold ${scores.overall >= 70 ? 'border-success text-success shadow-[0_0_15px_rgba(16,185,129,0.15)]' : scores.overall >= 40 ? 'border-warning text-warning' : 'border-border text-muted'}`}>
               {scores.overall}
             </div>
             <span className="text-[10px] text-muted mt-1 font-medium uppercase tracking-wider">Intel Score</span>
           </div>
         </div>
 
-        <div className="flex gap-1 mb-8 bg-elevated p-1 rounded-xl border border-border w-fit">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${activeTab === tab.id ? 'bg-primary text-[#0A0A0F]' : 'text-muted hover:text-foreground'}`}
-            >
-              {tab.label}
-              {tab.badge && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === tab.id ? 'bg-[#0A0A0F]/20 text-[#0A0A0F]' : 'bg-surface text-muted border border-border'}`}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 mb-8">
+          <div className="flex gap-1 bg-elevated p-1 rounded-xl border border-border w-fit">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === tab.id ? 'bg-primary text-[#0A0A0F]' : 'text-muted hover:text-foreground'}`}
+              >
+                {tab.label}
+                {tab.badge && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === tab.id ? 'bg-[#0A0A0F]/20 text-[#0A0A0F]' : 'bg-surface text-muted border border-border'}`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {activeTab === 'intelligence' && (

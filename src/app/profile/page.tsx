@@ -331,7 +331,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ProfileTab>('founder');
   const [inputValue, setInputValue] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const overlayMessagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchProfile = async (isInitial = false) => {
     try {
@@ -348,6 +351,14 @@ export default function ProfilePage() {
   };
 
   useEffect(() => { fetchProfile(true); }, []); // eslint-disable-line
+
+  useEffect(() => {
+    if (!loading) {
+      const t = setTimeout(() => setShowHint(true), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -367,6 +378,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    overlayMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const isActive = status === 'submitted' || status === 'streaming';
@@ -449,12 +461,12 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex gap-6 overflow-hidden">
-        {/* Left Column — Visual Profile */}
-        <div className="w-[42%] flex flex-col gap-4 overflow-y-auto pr-2 pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex gap-6 lg:overflow-hidden">
+        {/* Profile Column — full width on mobile, 42% on desktop */}
+        <div className="w-full lg:w-[42%] flex flex-col gap-4 overflow-y-auto pb-28 lg:pb-8 pr-0 lg:pr-2">
           {loading ? (
             <div className="text-center text-muted py-10">Loading profile...</div>
           ) : (
@@ -653,8 +665,8 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Right Column — Chat */}
-        <div className="flex-1 flex flex-col glass-card overflow-hidden">
+        {/* Right Column — Chat (desktop only) */}
+        <div className="hidden lg:flex flex-1 flex-col glass-card overflow-hidden">
           <div className="px-5 py-3 border-b border-border">
             <p className="text-sm font-semibold text-foreground">Profile Chat</p>
             <p className="text-xs text-muted">Update anything — email, traction, team, stage, all of it</p>
@@ -702,6 +714,87 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Floating chat FAB — mobile only */}
+      {!chatOpen && (
+        <div className="fixed bottom-6 right-5 z-40 lg:hidden flex flex-col items-end gap-2">
+          {showHint && (
+            <div className="bg-surface border border-border/80 rounded-2xl px-3 py-2.5 text-xs text-foreground shadow-xl max-w-[160px] text-center animate-fade-in-up leading-relaxed">
+              Update your profile via chat
+            </div>
+          )}
+          <button
+            onClick={() => { setChatOpen(true); setShowHint(false); }}
+            className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-light shadow-lg shadow-primary/40 flex items-center justify-center text-[#0A0A0F] hover:shadow-xl hover:shadow-primary/50 transition-all active:scale-95 animate-pulse-glow"
+            title="Profile Chat"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Full-screen chat overlay — mobile only */}
+      {chatOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background animate-slide-up lg:hidden">
+          <div className="border-b border-border bg-surface/80 backdrop-blur-xl px-4 py-3 flex items-center justify-between shrink-0">
+            <div>
+              <p className="text-base font-semibold text-foreground">Profile Chat</p>
+              <p className="text-xs text-muted">Update anything — email, traction, team, stage</p>
+            </div>
+            <button
+              onClick={() => setChatOpen(false)}
+              className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-elevated transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((m) => (
+              <div key={m.id} className={`flex ${(m.role as string) === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-4 py-3 ${(m.role as string) === 'user' ? 'chat-message-user' : 'chat-message-assistant'}`}>
+                  <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed text-sm">
+                    <ReactMarkdown>{getMessageText(m)}</ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {status === 'submitted' && (
+              <div className="flex justify-start">
+                <div className="chat-message-assistant px-4 py-3 flex gap-1 items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
+                  <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
+                  <div className="w-2 h-2 bg-primary rounded-full typing-dot" />
+                </div>
+              </div>
+            )}
+            <div ref={overlayMessagesEndRef} />
+          </div>
+
+          <div className="p-4 border-t border-border bg-surface shrink-0">
+            <form onSubmit={handleFormSubmit} className="flex gap-2">
+              <input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="My email is... / We just hit 500 users..."
+                disabled={isActive}
+                className="flex-1 bg-elevated border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={isActive || !inputValue.trim()}
+                className="px-4 py-3 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-semibold hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
+              >
+                {isActive ? '...' : 'Send'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

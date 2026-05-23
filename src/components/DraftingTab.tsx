@@ -438,7 +438,9 @@ export default function DraftingTab({ opportunity, onUpdate }: Props) {
                           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
                           <span className="text-xs font-semibold text-primary uppercase tracking-wide">Writing...</span>
                         </div>
-                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{streamingText}<span className="inline-block w-px h-4 bg-primary ml-0.5 animate-pulse align-text-bottom" /></p>
+                        <div className="max-h-52 overflow-y-auto">
+                          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{streamingText}<span className="inline-block w-px h-4 bg-primary ml-0.5 animate-pulse align-text-bottom" /></p>
+                        </div>
                       </div>
                     ) : isEditing ? (
                       <div className="mt-3">

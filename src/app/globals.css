@@ -121,6 +121,25 @@ body {
   border-radius: 18px 18px 18px 4px;
 }
 
+/* Slide-up animation for chat overlay */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* Hide scrollbar (used on tab nav) */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Status colors */
 .status-discovered { color: #9CA3AF; border-color: #374151; background: rgba(55, 65, 81, 0.2); }
 .status-analyzing { color: #8B5CF6; border-color: #6D28D9; background: rgba(109, 40, 217, 0.2); }
