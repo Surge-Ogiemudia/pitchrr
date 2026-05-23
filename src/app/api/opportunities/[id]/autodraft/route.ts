@@ -50,7 +50,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 Question: ${q.question}
 Word Limit: ${q.wordLimit ? `${q.wordLimit} words` : 'None'}
 
-Output ONLY the final draft answer text. No headers, no "DRAFT" labels, no strategy explanations, no commentary. Just the ready-to-submit answer.`;
+Output ONLY the final draft answer text. No headers, no "DRAFT" labels, no strategy explanations, no commentary. Just the ready-to-submit answer.
+ABSOLUTE RULE: Never use the em dash character (—) anywhere. Use a comma, period, or short sentence break instead.`;
 
       const { text } = await generateText({
         model: anthropic('claude-sonnet-4-6'),
