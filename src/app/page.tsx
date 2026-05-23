@@ -29,6 +29,7 @@ export default function PipelineDashboard() {
   const [loading, setLoading] = useState(true);
   const [inputData, setInputData] = useState('');
   const [processingUrl, setProcessingUrl] = useState(false);
+  const [intakeProgress, setIntakeProgress] = useState(0);
   const [intakeError, setIntakeError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -45,6 +46,32 @@ export default function PipelineDashboard() {
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!processingUrl) {
+      if (intakeProgress > 0) {
+        setIntakeProgress(100);
+        const t = setTimeout(() => setIntakeProgress(0), 600);
+        return () => clearTimeout(t);
+      }
+      return;
+    }
+    // Simulate realistic progress: fast start, slows near completion
+    setIntakeProgress(8);
+    const steps: [number, number][] = [
+      [22, 600],
+      [38, 1800],
+      [54, 4000],
+      [67, 8000],
+      [76, 14000],
+      [84, 22000],
+      [90, 32000],
+      [94, 44000],
+      [97, 54000],
+    ];
+    const timers = steps.map(([pct, delay]) => setTimeout(() => setIntakeProgress(pct), delay));
+    return () => timers.forEach(clearTimeout);
+  }, [processingUrl]);
 
   const fetchOpportunities = async () => {
     try {
@@ -142,6 +169,14 @@ export default function PipelineDashboard() {
   return (
     <div className="min-h-screen">
       <Navbar />
+      {intakeProgress > 0 && (
+        <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 h-[2px] bg-elevated">
+          <div
+            className="h-full bg-gradient-to-r from-primary to-primary-light shadow-[0_0_8px_rgba(245,158,11,0.7)] transition-all duration-700 ease-out"
+            style={{ width: `${intakeProgress}%` }}
+          />
+        </div>
+      )}
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
