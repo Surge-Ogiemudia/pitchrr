@@ -60,25 +60,20 @@ export default function PipelineDashboard() {
     }
   };
 
-  const handleIntake = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputData.trim()) return;
-    
+  const runIntake = async (value: string) => {
+    if (!value.trim()) return;
     setProcessingUrl(true);
     setIntakeError(null);
-
-    const isUrl = inputData.trim().startsWith('http://') || inputData.trim().startsWith('https://');
-
+    const isUrl = value.trim().startsWith('http://') || value.trim().startsWith('https://');
     try {
       const res = await fetch('/api/intake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: isUrl ? inputData.trim() : undefined,
-          rawText: !isUrl ? inputData.trim() : undefined,
+          url: isUrl ? value.trim() : undefined,
+          rawText: !isUrl ? value.trim() : undefined,
         }),
       });
-
       if (res.ok) {
         const opp = await res.json();
         setInputData('');
@@ -92,6 +87,22 @@ export default function PipelineDashboard() {
       setIntakeError('Network error — check your connection and try again');
       setProcessingUrl(false);
     }
+  };
+
+  // Auto-trigger intake when opened via iOS Shortcut (?intake=URL)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const intakeUrl = params.get('intake');
+    if (intakeUrl) {
+      const decoded = decodeURIComponent(intakeUrl);
+      setInputData(decoded);
+      runIntake(decoded);
+    }
+  }, []);
+
+  const handleIntake = async (e: React.FormEvent) => {
+    e.preventDefault();
+    runIntake(inputData);
   };
 
   const deleteOpportunity = async (id: string) => {
