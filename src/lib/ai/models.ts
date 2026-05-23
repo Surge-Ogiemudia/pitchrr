@@ -26,11 +26,9 @@ export async function generateTextWithFallback(params: {
     return text;
   } catch (err) {
     console.warn('[AI] Claude failed, retrying with Gemini:', err instanceof Error ? err.message : err);
-    const geminiModel = genAI.getGenerativeModel({
-      model: 'gemma-4-26b-a4b-it',
-      ...(params.system ? { systemInstruction: params.system } : {}),
-    });
-    const result = await geminiModel.generateContent(params.prompt);
+    const geminiModel = genAI.getGenerativeModel({ model: 'gemma-4-26b-a4b-it' });
+    const fullPrompt = params.system ? `${params.system}\n\n---\n\n${params.prompt}` : params.prompt;
+    const result = await geminiModel.generateContent(fullPrompt);
     return result.response.text();
   }
 }
@@ -56,10 +54,10 @@ export async function generateObjectWithFallback<T>(params: {
     console.warn('[AI] Claude failed, retrying with Gemini:', err instanceof Error ? err.message : err);
     const geminiModel = genAI.getGenerativeModel({
       model: 'gemma-4-26b-a4b-it',
-      ...(params.system ? { systemInstruction: params.system } : {}),
       generationConfig: { responseMimeType: 'application/json', temperature: params.temperature ?? 0.3 },
     });
-    const result = await geminiModel.generateContent(params.prompt);
+    const fullPrompt = params.system ? `${params.system}\n\n---\n\n${params.prompt}` : params.prompt;
+    const result = await geminiModel.generateContent(fullPrompt);
     const text = result.response.text();
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
