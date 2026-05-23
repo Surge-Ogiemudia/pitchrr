@@ -37,6 +37,13 @@ interface Framing {
   addedAt: Date;
 }
 
+interface Story {
+  title: string;
+  content: string;
+  theme: 'origin' | 'impact' | 'credibility' | 'customer' | 'turning-point' | 'team' | 'other';
+  addedAt: Date;
+}
+
 export interface IStartupProfile extends Document {
   // Founder contact & identity
   founderName: TrackedField;
@@ -60,8 +67,10 @@ export interface IStartupProfile extends Document {
   useOfFunds: TrackedField;
   mission: TrackedField;
   // Structured data
+  writingVoice: TrackedField;
   traction: TractionItem[];
   team: TeamMember[];
+  stories: Story[];
   dynamicFields: DynamicField[];
   framings: Framing[];
   draftingRules: string[];
@@ -111,6 +120,7 @@ export const TRACKED_PROFILE_FIELDS = new Set([
   'founderName', 'founderEmail', 'founderPhone', 'founderLocation', 'founderLinkedIn', 'founderBio',
   'startupName', 'website', 'stage', 'industry',
   'oneLiner', 'problem', 'solution', 'businessModel', 'marketSize', 'uniqueness', 'mission', 'useOfFunds',
+  'writingVoice',
 ]);
 
 export const StartupProfileSchema = new Schema({
@@ -134,6 +144,16 @@ export const StartupProfileSchema = new Schema({
   uniqueness: { type: TrackedFieldSchema, default: () => ({}) },
   useOfFunds: { type: TrackedFieldSchema, default: () => ({}) },
   mission: { type: TrackedFieldSchema, default: () => ({}) },
+  writingVoice: { type: TrackedFieldSchema, default: () => ({}) },
+  stories: {
+    type: [{
+      title: { type: String, required: true },
+      content: { type: String, required: true },
+      theme: { type: String, enum: ['origin', 'impact', 'credibility', 'customer', 'turning-point', 'team', 'other'], default: 'other' },
+      addedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  },
   dynamicFields: { type: [DynamicFieldSchema], default: [] },
   framings: { type: [FramingSchema], default: [] },
   draftingRules: { type: [String], default: [] },

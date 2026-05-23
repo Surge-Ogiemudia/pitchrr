@@ -140,6 +140,34 @@ IMPORTANT: Call this immediately whenever the founder shares ANY personal or bus
           return `Traction updated: ${traction.length} signal(s) saved.`;
         }
       }),
+      save_story: tool({
+        description: `Saves a personal story or anecdote to the founder's permanent profile. Call this whenever the founder shares a specific story — why they started, a human moment that proves the problem is real, a customer experience, a co-founder story, a turning point, or anything that explains who they are and why they are credible. These stories are used directly in application answers. Capture the story exactly as they told it — do not summarise or paraphrase.`,
+        inputSchema: zodSchema(z.object({
+          title: z.string().describe('Short title, e.g. "Why I Started" or "The Susan Moment"'),
+          content: z.string().describe('The full story text as the founder shared it — verbatim where possible'),
+          theme: z.enum(['origin', 'impact', 'credibility', 'customer', 'turning-point', 'team', 'other']).describe('What type of story this is'),
+        })),
+        execute: async ({ title, content, theme }) => {
+          const doc = await StartupProfile.findOne();
+          if (!doc) return 'Profile not found.';
+          (doc as any).stories = [...((doc as any).stories || []), { title, content, theme, addedAt: new Date() }];
+          await doc.save();
+          return `Story saved: "${title}" (${theme})`;
+        }
+      }),
+      delete_story: tool({
+        description: 'Removes a story from the profile by its exact title. Use when the founder asks to remove or replace a story.',
+        inputSchema: zodSchema(z.object({
+          title: z.string().describe('The exact title of the story to delete'),
+        })),
+        execute: async ({ title }) => {
+          const doc = await StartupProfile.findOne();
+          if (!doc) return 'Profile not found.';
+          (doc as any).stories = ((doc as any).stories || []).filter((s: any) => s.title !== title);
+          await doc.save();
+          return `Story removed: "${title}"`;
+        }
+      }),
     };
   }
 

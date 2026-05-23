@@ -6,7 +6,7 @@ import { DefaultChatTransport } from 'ai';
 import Navbar from '@/components/Navbar';
 import ReactMarkdown from 'react-markdown';
 
-type ProfileTab = 'founder' | 'startup' | 'traction' | 'facts';
+type ProfileTab = 'founder' | 'startup' | 'traction' | 'stories' | 'facts';
 
 const TRACTION_COLORS: Record<string, string> = {
   revenue: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
@@ -22,6 +22,26 @@ const CORE_FIELDS = [
   'startupName', 'stage', 'industry', 'oneLiner', 'problem', 'solution',
   'businessModel', 'marketSize', 'uniqueness', 'mission',
 ];
+
+const STORY_THEME_STYLES: Record<string, string> = {
+  origin: 'text-primary bg-primary/10 border-primary/30',
+  impact: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
+  credibility: 'text-blue-300 bg-blue-500/10 border-blue-500/30',
+  customer: 'text-purple-300 bg-purple-500/10 border-purple-500/30',
+  'turning-point': 'text-orange-300 bg-orange-500/10 border-orange-500/30',
+  team: 'text-teal-300 bg-teal-500/10 border-teal-500/30',
+  other: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/30',
+};
+
+const STORY_THEME_LABELS: Record<string, string> = {
+  origin: 'Why I Started',
+  impact: 'Human Impact',
+  credibility: 'Credibility',
+  customer: 'Customer Moment',
+  'turning-point': 'Turning Point',
+  team: 'Team Story',
+  other: 'Other',
+};
 
 function getInitials(name: string): string {
   return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -186,6 +206,120 @@ function FactsTab({ facts, onSave, onDelete }: {
   );
 }
 
+function StoriesTab({ stories, writingVoice, onSaveField, onSaveStory, onDeleteStory }: {
+  stories: { title: string; content: string; theme: string }[];
+  writingVoice: string;
+  onSaveField: (field: string, value: string) => void;
+  onSaveStory: (story: { title: string; content: string; theme: string }) => void;
+  onDeleteStory: (title: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newTheme, setNewTheme] = useState('origin');
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+
+  const commit = () => {
+    if (!newTitle.trim() || !newContent.trim()) return;
+    onSaveStory({ title: newTitle.trim(), content: newContent.trim(), theme: newTheme });
+    setNewTitle(''); setNewContent(''); setNewTheme('origin'); setAdding(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <FieldCard label="Writing Voice" field="writingVoice" value={writingVoice} onSave={onSaveField} />
+      <p className="text-xs text-muted px-1">Describe how you naturally communicate — direct vs. warm, data-first vs. story-first, what you avoid, your sentence rhythm. The AI will match this in every draft.</p>
+
+      <div className="flex items-center justify-between px-1 pt-2">
+        <p className="text-xs font-semibold text-muted uppercase tracking-wider">Stories</p>
+        <span className="text-xs text-subtle">{stories.length} saved — tell the chat to add more</span>
+      </div>
+
+      {stories.length === 0 ? (
+        <div className="glass-card p-5 text-center">
+          <p className="text-sm text-muted italic">No stories yet.</p>
+          <p className="text-xs text-muted mt-1">Tell the profile chat "here's why I started..." or "there was this moment when..." and it will save it automatically. Or add one manually below.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {stories.map((story, i) => (
+            <div key={i} className="glass-card p-4 group">
+              <div
+                className="flex items-start justify-between gap-3 cursor-pointer"
+                onClick={() => setExpandedIdx(expandedIdx === i ? null : i)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${STORY_THEME_STYLES[story.theme] || STORY_THEME_STYLES.other}`}>
+                      {STORY_THEME_LABELS[story.theme] || story.theme}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{story.title}</p>
+                  {expandedIdx !== i && (
+                    <p className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{story.content}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-none">
+                  <button
+                    onClick={e => { e.stopPropagation(); onDeleteStory(story.title); }}
+                    className="opacity-0 group-hover:opacity-100 text-xs text-muted hover:text-danger transition-all"
+                  >
+                    Delete
+                  </button>
+                  <svg className={`w-3.5 h-3.5 text-muted flex-none transition-transform ${expandedIdx === i ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+              {expandedIdx === i && (
+                <p className="text-sm text-foreground leading-relaxed mt-3 pt-3 border-t border-border whitespace-pre-wrap">{story.content}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {adding ? (
+        <div className="glass-card p-4 space-y-3 border border-primary/30">
+          <input
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+            placeholder='Story title, e.g. "The moment I knew this was real"'
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+          />
+          <select
+            value={newTheme}
+            onChange={e => setNewTheme(e.target.value)}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+          >
+            {Object.entries(STORY_THEME_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <textarea
+            value={newContent}
+            onChange={e => setNewContent(e.target.value)}
+            placeholder="Tell the story in full. The more detail the better — the AI uses this verbatim in applications."
+            rows={5}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary resize-none leading-relaxed"
+          />
+          <div className="flex gap-2">
+            <button onClick={commit} disabled={!newTitle.trim() || !newContent.trim()} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-[#0A0A0F] font-semibold disabled:opacity-40">Save Story</button>
+            <button onClick={() => { setAdding(false); setNewTitle(''); setNewContent(''); setNewTheme('origin'); }} className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="w-full py-2.5 rounded-xl border border-dashed border-border text-xs text-muted hover:text-foreground hover:border-primary/50 transition-colors"
+        >
+          + Add a story manually
+        </button>
+      )}
+    </div>
+  );
+}
+
 const getMessageText = (m: any) =>
   (m.parts as any[])
     ?.filter((p: any) => p.type === 'text')
@@ -273,18 +407,44 @@ export default function ProfilePage() {
 
   // Completeness score
   const filledCount = profileData
-    ? CORE_FIELDS.filter((f) => profileData[f]?.value?.trim()).length + (profileData.traction?.length > 0 ? 1 : 0)
+    ? CORE_FIELDS.filter((f) => profileData[f]?.value?.trim()).length
+      + (profileData.traction?.length > 0 ? 1 : 0)
+      + (profileData.writingVoice?.value?.trim() ? 1 : 0)
+      + (profileData.stories?.length > 0 ? 1 : 0)
     : 0;
-  const totalFields = CORE_FIELDS.length + 1;
+  const totalFields = CORE_FIELDS.length + 3;
   const completenessPercent = Math.round((filledCount / totalFields) * 100);
 
   const founderName = profileData?.founderName?.value;
   const initials = founderName ? getInitials(founderName) : '?';
 
+  const handleSaveStory = async (story: { title: string; content: string; theme: string }) => {
+    try {
+      await fetch('/api/profile/stories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(story),
+      });
+      await fetchProfile();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteStory = async (title: string) => {
+    try {
+      await fetch('/api/profile/stories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      await fetchProfile();
+    } catch (err) { console.error(err); }
+  };
+
   const tabs: { key: ProfileTab; label: string; count?: number }[] = [
     { key: 'founder', label: 'Founder' },
     { key: 'startup', label: 'Startup' },
     { key: 'traction', label: 'Traction', count: profileData?.traction?.length || 0 },
+    { key: 'stories', label: 'Stories', count: profileData?.stories?.length || 0 },
     { key: 'facts', label: 'Facts', count: profileData?.dynamicFields?.length || 0 },
   ];
 
@@ -464,6 +624,17 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* STORIES TAB */}
+              {activeTab === 'stories' && (
+                <StoriesTab
+                  stories={profileData?.stories || []}
+                  writingVoice={profileData?.writingVoice?.value || ''}
+                  onSaveField={handleFieldSave}
+                  onSaveStory={handleSaveStory}
+                  onDeleteStory={handleDeleteStory}
+                />
               )}
 
               {/* FACTS TAB */}

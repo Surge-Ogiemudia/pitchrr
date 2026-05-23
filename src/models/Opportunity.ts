@@ -97,6 +97,60 @@ export interface IOpportunity extends Document {
   }[];
   notes: string;
   submissionDate: Date | null;
+  opportunityDnaLog: { role: 'user' | 'assistant'; content: string; timestamp: Date }[];
+  winnersDnaLog: { role: 'user' | 'assistant'; content: string; timestamp: Date }[];
+  evaluationFramework: {
+    summary: string;
+    weights: { category: string; weight: number; rationale: string }[];
+    dealbreakers: string[];
+    keySignals: string[];
+    generatedAt: Date;
+  } | null;
+  alignmentEvidenceMap: {
+    criterion: string;
+    proofPoint: string;
+    hasGap: boolean;
+    improvementQuestion: string;
+  }[];
+  redFlags: {
+    concern: string;
+    reframe: string;
+    severity: 'low' | 'medium' | 'high';
+  }[];
+  programmeVibe: {
+    tone: string;
+    energy: string;
+    positioningGuidance: string;
+    languageToUse: string[];
+    languageToAvoid: string[];
+    generatedAt: Date;
+  } | null;
+  timingContext: {
+    currentEvents: string[];
+    relevanceNote: string;
+    generatedAt: Date;
+  } | null;
+  socialCapital: {
+    connection: string;
+    relationship: string;
+    actionSuggested: string;
+    messageDraft: string;
+    status: 'pending' | 'activated';
+  }[];
+  reviewerPersona: {
+    name: string;
+    background: string;
+    previousFunds: string[];
+    values: string[];
+    languageGuidance: string;
+    generatedAt: Date;
+  } | null;
+  improvementTasks: {
+    section: string;
+    task: string;
+    type: 'question' | 'file' | 'resource' | 'action';
+    completed: boolean;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -143,6 +197,7 @@ const OpportunitySchema = new Schema({
   competitiveIntel: {
     likelyCompetitors: [String],
     differentiators: [String],
+    competitiveAdvantage: { type: String, default: '' },
   },
   momentumSignals: [{
     milestone: String,
@@ -205,6 +260,66 @@ const OpportunitySchema = new Schema({
   }],
   notes: { type: String, default: '' },
   submissionDate: { type: Date, default: null },
+  opportunityDnaLog: {
+    type: [{ role: { type: String, enum: ['user', 'assistant'] }, content: String, timestamp: { type: Date, default: Date.now } }],
+    default: [],
+  },
+  winnersDnaLog: {
+    type: [{ role: { type: String, enum: ['user', 'assistant'] }, content: String, timestamp: { type: Date, default: Date.now } }],
+    default: [],
+  },
+  evaluationFramework: {
+    summary: { type: String, default: '' },
+    weights: [{ category: String, weight: Number, rationale: String }],
+    dealbreakers: [String],
+    keySignals: [String],
+    generatedAt: { type: Date },
+  },
+  alignmentEvidenceMap: [{
+    criterion: String,
+    proofPoint: { type: String, default: '' },
+    hasGap: { type: Boolean, default: false },
+    improvementQuestion: { type: String, default: '' },
+  }],
+  redFlags: [{
+    concern: String,
+    reframe: String,
+    severity: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  }],
+  programmeVibe: {
+    tone: { type: String, default: '' },
+    energy: { type: String, default: '' },
+    positioningGuidance: { type: String, default: '' },
+    languageToUse: [String],
+    languageToAvoid: [String],
+    generatedAt: { type: Date },
+  },
+  timingContext: {
+    currentEvents: [String],
+    relevanceNote: { type: String, default: '' },
+    generatedAt: { type: Date },
+  },
+  socialCapital: [{
+    connection: String,
+    relationship: String,
+    actionSuggested: String,
+    messageDraft: { type: String, default: '' },
+    status: { type: String, enum: ['pending', 'activated'], default: 'pending' },
+  }],
+  reviewerPersona: {
+    name: { type: String, default: '' },
+    background: { type: String, default: '' },
+    previousFunds: [String],
+    values: [String],
+    languageGuidance: { type: String, default: '' },
+    generatedAt: { type: Date },
+  },
+  improvementTasks: [{
+    section: { type: String, required: true },
+    task: { type: String, required: true },
+    type: { type: String, enum: ['question', 'file', 'resource', 'action'], default: 'action' },
+    completed: { type: Boolean, default: false },
+  }],
 }, {
   timestamps: true,
   collection: 'opportunities',

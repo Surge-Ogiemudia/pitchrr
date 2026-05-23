@@ -11,7 +11,8 @@ interface Opportunity {
   organisation: string;
   deadline: string | null;
   status: string;
-  fitScore: { overall: number };
+  scrapedQuestions: { question: string }[];
+  draftedAnswers: { questionIndex: number }[];
 }
 
 const COLUMNS = [
@@ -28,6 +29,7 @@ export default function PipelineDashboard() {
   const [loading, setLoading] = useState(true);
   const [inputData, setInputData] = useState('');
   const [processingUrl, setProcessingUrl] = useState(false);
+  const [intakeError, setIntakeError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const router = useRouter();
 
@@ -54,29 +56,31 @@ export default function PipelineDashboard() {
     if (!inputData.trim()) return;
     
     setProcessingUrl(true);
-    
-    // Determine if it's a URL or raw text
+    setIntakeError(null);
+
     const isUrl = inputData.trim().startsWith('http://') || inputData.trim().startsWith('https://');
-    
+
     try {
       const res = await fetch('/api/intake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           url: isUrl ? inputData.trim() : undefined,
-          rawText: !isUrl ? inputData.trim() : undefined 
+          rawText: !isUrl ? inputData.trim() : undefined,
         }),
       });
-      
+
       if (res.ok) {
         const opp = await res.json();
         setInputData('');
-        fetchOpportunities();
-        // router.push(`/opportunity/${opp._id}`);
+        router.push(`/opportunity/${opp._id}`);
+      } else {
+        const data = await res.json();
+        setIntakeError(data.error || 'Failed to analyze opportunity — try pasting the raw text instead');
+        setProcessingUrl(false);
       }
     } catch (err) {
-      console.error(err);
-    } finally {
+      setIntakeError('Network error — check your connection and try again');
       setProcessingUrl(false);
     }
   };
@@ -113,23 +117,28 @@ export default function PipelineDashboard() {
             <p className="text-muted text-sm">Strategic tracking for all opportunities.</p>
           </div>
           
-          <form onSubmit={handleIntake} className="flex flex-1 max-w-xl gap-2">
-            <textarea
-              value={inputData}
-              onChange={(e) => setInputData(e.target.value)}
-              placeholder="Paste opportunity URL or raw page text here..."
-              required
-              rows={1}
-              className="flex-1 bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors resize-y min-h-[44px] max-h-32"
-            />
-            <button
-              type="submit"
-              disabled={processingUrl || !inputData.trim()}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap self-start"
-            >
-              {processingUrl ? 'Analyzing...' : 'Add & Analyze'}
-            </button>
-          </form>
+          <div className="flex-1 max-w-xl">
+            <form onSubmit={handleIntake} className="flex gap-2">
+              <textarea
+                value={inputData}
+                onChange={(e) => { setInputData(e.target.value); setIntakeError(null); }}
+                placeholder="Paste opportunity URL or raw page text here..."
+                required
+                rows={1}
+                className="flex-1 bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors resize-y min-h-[44px] max-h-32"
+              />
+              <button
+                type="submit"
+                disabled={processingUrl || !inputData.trim()}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap self-start"
+              >
+                {processingUrl ? 'Analyzing...' : 'Add & Analyze'}
+              </button>
+            </form>
+            {intakeError && (
+              <p className="mt-2 text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{intakeError}</p>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -179,33 +188,41 @@ export default function PipelineDashboard() {
                         ) : (
                           <>
                             <div className="flex justify-between items-start mb-2">
-                              <span className="text-xs font-semibold text-primary">
-                                Fit: {opp.fitScore?.overall || 0}
+                              <span className={`text-xs font-semibold ${opp.deadline && new Date(opp.deadline) < new Date() ? 'text-danger' : 'text-muted'}`}>
+                                {getDeadlineText(opp.deadline)}
                               </span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted">
-                                  {getDeadlineText(opp.deadline)}
-                                </span>
-                                <button
-                                  onClick={e => { e.stopPropagation(); setConfirmDelete(opp._id); }}
-                                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all"
-                                  title="Delete"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                    <path d="M10 11v6M14 11v6" />
-                                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                                  </svg>
-                                </button>
-                              </div>
+                              <button
+                                onClick={e => { e.stopPropagation(); setConfirmDelete(opp._id); }}
+                                className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all"
+                                title="Delete"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6M14 11v6" />
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                              </button>
                             </div>
                             <h4 className="font-medium text-foreground line-clamp-2 leading-snug mb-1">
                               {opp.programmeName}
                             </h4>
-                            <p className="text-xs text-muted truncate">
+                            <p className="text-xs text-muted truncate mb-2">
                               {opp.organisation}
                             </p>
+                            {opp.scrapedQuestions?.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1 bg-elevated rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-primary rounded-full transition-all"
+                                    style={{ width: `${((opp.draftedAnswers?.length || 0) / opp.scrapedQuestions.length) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-muted flex-none">
+                                  {opp.draftedAnswers?.length || 0}/{opp.scrapedQuestions.length}
+                                </span>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>
