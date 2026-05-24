@@ -3,7 +3,7 @@ import { generateText, generateObject, streamText } from 'ai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ZodSchema } from 'zod';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 type StreamTextParams = Parameters<typeof streamText>[0];
 
