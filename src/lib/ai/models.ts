@@ -26,7 +26,7 @@ export async function generateTextWithFallback(params: {
     return text;
   } catch (err) {
     console.warn('[AI] Claude failed, retrying with Gemini:', err instanceof Error ? err.message : err);
-    const geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const geminiModel = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
     const fullPrompt = params.system ? `${params.system}\n\n---\n\n${params.prompt}` : params.prompt;
     const result = await geminiModel.generateContent(fullPrompt);
     return result.response.text();
@@ -53,7 +53,7 @@ export async function generateObjectWithFallback<T>(params: {
   } catch (err) {
     console.warn('[AI] Claude failed, retrying with Gemini:', err instanceof Error ? err.message : err);
     const geminiModel = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.1-flash-lite',
       generationConfig: { responseMimeType: 'application/json', temperature: params.temperature ?? 0.3 },
     });
     const fullPrompt = params.system ? `${params.system}\n\n---\n\n${params.prompt}` : params.prompt;
