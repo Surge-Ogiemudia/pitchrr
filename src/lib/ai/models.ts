@@ -8,20 +8,30 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 type StreamTextParams = Parameters<typeof streamText>[0];
 
 function zodToTemplate(schema: any, depth = 0): string {
-  const def = schema?._def;
+  const def = schema?._def || schema?.def || schema;
   if (!def) return '"<value>"';
-  switch (def.typeName) {
-    case 'ZodString': return '"<string>"';
-    case 'ZodNumber': return '<number>';
-    case 'ZodBoolean': return '<boolean>';
-    case 'ZodNull': return 'null';
+  const typeName = def.typeName || def.type || schema.type;
+  switch (typeName) {
+    case 'ZodString':
+    case 'string': return '"<string>"';
+    case 'ZodNumber':
+    case 'number': return '<number>';
+    case 'ZodBoolean':
+    case 'boolean': return '<boolean>';
+    case 'ZodNull':
+    case 'null': return 'null';
     case 'ZodNullable':
-    case 'ZodOptional': return zodToTemplate(def.innerType, depth);
-    case 'ZodEnum': return `"${def.values[0]}"`;
-    case 'ZodArray': return `[${zodToTemplate(def.type, depth + 1)}]`;
-    case 'ZodObject': {
+    case 'nullable':
+    case 'ZodOptional':
+    case 'optional': return zodToTemplate(def.innerType, depth);
+    case 'ZodEnum':
+    case 'enum': return `"${def.values[0]}"`;
+    case 'ZodArray':
+    case 'array': return `[${zodToTemplate(def.type, depth + 1)}]`;
+    case 'ZodObject':
+    case 'object': {
       try {
-        const shape = def.shape();
+        const shape = typeof def.shape === 'function' ? def.shape() : def.shape;
         const pad = '  '.repeat(depth + 1);
         const fields = Object.entries(shape)
           .map(([k, v]) => `${pad}"${k}": ${zodToTemplate(v as any, depth + 1)}`)
@@ -63,9 +73,10 @@ function camelWords(s: string): string[] {
 // For any schema key still missing, find the Gemini key that shares the most words
 function getShape(schema: ZodSchema<any>): Record<string, any> | null {
   try {
-    const def = (schema as any)._def;
+    const def = (schema as any)._def || (schema as any).def || schema;
     if (!def) return null;
-    if (def.typeName !== 'ZodObject') return null;
+    const typeName = def.typeName || def.type || (schema as any).type;
+    if (typeName !== 'ZodObject' && typeName !== 'object') return null;
     // shape can be a function (Zod v3) or a plain object (some builds)
     const shape = typeof def.shape === 'function' ? def.shape() : def.shape;
     return shape && typeof shape === 'object' ? shape : null;
@@ -99,14 +110,16 @@ function coerceToSchema(raw: any, schema: ZodSchema<any>): any {
   let normalized = normalizeKeys(obj);
   normalized = fuzzyRemap(normalized, schema);
   // Coerce array → string for string fields
-  const def = (schema as any)._def;
-  if (def?.typeName === 'ZodObject') {
-    const shape = def.shape?.();
+  const def = (schema as any)._def || (schema as any).def || schema;
+  const typeName = def?.typeName || def?.type || (schema as any).type;
+  if (typeName === 'ZodObject' || typeName === 'object') {
+    const shape = typeof def.shape === 'function' ? def.shape() : def.shape;
     if (shape) {
       for (const [key, fieldSchema] of Object.entries(shape)) {
-        const fd = (fieldSchema as any)?._def;
-        const isString = fd?.typeName === 'ZodString' ||
-          (fd?.typeName === 'ZodNullable' && fd?.innerType?._def?.typeName === 'ZodString');
+        const fd = (fieldSchema as any)?._def || (fieldSchema as any)?.def || fieldSchema;
+        const ft = fd?.typeName || fd?.type || (fieldSchema as any)?.type;
+        const isString = ft === 'ZodString' || ft === 'string' ||
+          (ft === 'ZodNullable' || ft === 'nullable' ? (fd?.innerType?._def?.typeName === 'ZodString' || fd?.innerType?._def?.type === 'string' || fd?.innerType?.type === 'string') : false);
         if (isString && Array.isArray(normalized[key])) {
           normalized[key] = (normalized[key] as any[]).join('. ');
         }
