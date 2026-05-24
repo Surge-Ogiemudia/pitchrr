@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       temperature: 0.7,
     });
 
-    return stream.toDataStreamResponse();
+    return stream.toTextStreamResponse();
   } catch (error) {
     console.error('Failed to generate asset:', error);
     return NextResponse.json({ error: 'Failed to generate asset' }, { status: 500 });
