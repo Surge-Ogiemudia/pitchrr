@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dbConnectShared } from '@/lib/db';
-import { getOpportunityModel } from '@/models/Opportunity';
+import Opportunity from '@/models/Opportunity';
 import { getStartupProfileModel } from '@/models/StartupProfile';
 import { streamWithFallback } from '@/lib/ai/models';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
@@ -14,7 +14,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const sharedConn = await dbConnectShared();
-    const Opportunity = getOpportunityModel(sharedConn);
     const StartupProfile = getStartupProfileModel(sharedConn);
 
     const opportunity = await Opportunity.findById(params.id).lean();

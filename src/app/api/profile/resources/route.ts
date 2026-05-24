@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { dbConnectShared } from '@/lib/db';
 import { getStartupProfileModel } from '@/models/StartupProfile';
 import { put } from '@vercel/blob';
-import pdfParse from 'pdf-parse';
+
+// pdf-parse is imported dynamically inside the route to bypass Turbopack ESM default export strictness
 
 export async function POST(req: Request) {
   try {
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
       // Extract text if PDF
       if (format === 'pdf') {
         try {
+          const pdfParse = require('pdf-parse');
           const buffer = Buffer.from(await file.arrayBuffer());
           const pdfData = await pdfParse(buffer);
           extractedContext = pdfData.text;
