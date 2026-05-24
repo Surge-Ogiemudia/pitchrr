@@ -7,7 +7,6 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 type StreamTextParams = Parameters<typeof streamText>[0];
 
-// Build a template string from a Zod schema so Gemini knows exact structure
 function zodToTemplate(schema: any, depth = 0): string {
   const def = schema?._def;
   if (!def) return '"<value>"';
@@ -19,10 +18,7 @@ function zodToTemplate(schema: any, depth = 0): string {
     case 'ZodNullable':
     case 'ZodOptional': return zodToTemplate(def.innerType, depth);
     case 'ZodEnum': return `"${def.values[0]}"`;
-    case 'ZodArray': {
-      const inner = zodToTemplate(def.type, depth + 1);
-      return `[${inner}]`;
-    }
+    case 'ZodArray': return `[${zodToTemplate(def.type, depth + 1)}]`;
     case 'ZodObject': {
       try {
         const shape = def.shape();
@@ -40,13 +36,11 @@ function zodToTemplate(schema: any, depth = 0): string {
 function schemaHint(schema: ZodSchema<any>): string {
   try {
     const template = zodToTemplate(schema);
-    return `\n\nCRITICAL: Return ONLY a single JSON object (NOT wrapped in an array). Use EXACTLY the camelCase key names shown below. String fields must be strings — if you would return an array, join it into one string instead.\n\n${template}`;
-  } catch {
-    return '';
-  }
+    return `\n\nSTRICT OUTPUT REQUIREMENT: Return ONLY a single JSON object (NOT an array). Use EXACTLY the camelCase key names below — no alternatives, no snake_case. String fields must be strings, not arrays.\n\n${template}`;
+  } catch { return ''; }
 }
 
-// Normalize Gemini's response: unwrap array, convert snake_case → camelCase, join array→string where needed
+// snake_case → camelCase
 function snakeToCamel(s: string): string {
   return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
@@ -61,20 +55,47 @@ function normalizeKeys(obj: any): any {
   return obj;
 }
 
-function coerceToSchema(parsed: any, schema: ZodSchema<any>): any {
-  // Unwrap array wrapper
-  const obj = Array.isArray(parsed) ? parsed[0] : parsed;
-  // Normalize snake_case keys
-  const normalized = normalizeKeys(obj);
-  // Coerce array values to string for string fields
+// Split camelCase into words for fuzzy matching
+function camelWords(s: string): string[] {
+  return s.replace(/([A-Z])/g, ' $1').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+}
+
+// For any schema key still missing, find the Gemini key that shares the most words
+function fuzzyRemap(obj: Record<string, any>, schema: ZodSchema<any>): Record<string, any> {
+  const def = (schema as any)._def;
+  if (def?.typeName !== 'ZodObject') return obj;
+  const shape = def.shape?.();
+  if (!shape) return obj;
+  const result = { ...obj };
+  const geminiKeys = Object.keys(obj);
+  for (const schemaKey of Object.keys(shape)) {
+    if (result[schemaKey] !== undefined) continue;
+    const schemaWords = camelWords(schemaKey);
+    let bestKey = '';
+    let bestScore = 0;
+    for (const gk of geminiKeys) {
+      const gkWords = camelWords(gk);
+      const score = schemaWords.filter(w => gkWords.some(gw => gw.includes(w) || w.includes(gw))).length;
+      if (score > bestScore) { bestScore = score; bestKey = gk; }
+    }
+    if (bestScore > 0 && bestKey) result[schemaKey] = result[bestKey];
+  }
+  return result;
+}
+
+function coerceToSchema(raw: any, schema: ZodSchema<any>): any {
+  const obj = Array.isArray(raw) ? raw[0] : raw;
+  let normalized = normalizeKeys(obj);
+  normalized = fuzzyRemap(normalized, schema);
+  // Coerce array → string for string fields
   const def = (schema as any)._def;
   if (def?.typeName === 'ZodObject') {
     const shape = def.shape?.();
     if (shape) {
       for (const [key, fieldSchema] of Object.entries(shape)) {
-        const fieldDef = (fieldSchema as any)?._def;
-        const isString = fieldDef?.typeName === 'ZodString' ||
-          (fieldDef?.typeName === 'ZodNullable' && fieldDef?.innerType?._def?.typeName === 'ZodString');
+        const fd = (fieldSchema as any)?._def;
+        const isString = fd?.typeName === 'ZodString' ||
+          (fd?.typeName === 'ZodNullable' && fd?.innerType?._def?.typeName === 'ZodString');
         if (isString && Array.isArray(normalized[key])) {
           normalized[key] = (normalized[key] as any[]).join('. ');
         }
@@ -134,11 +155,13 @@ export async function generateObjectWithFallback<T>(params: {
       generationConfig: { responseMimeType: 'application/json', temperature: params.temperature ?? 0.3 },
     });
     const hint = schemaHint(params.schema);
-    const fullPrompt = params.system
-      ? `${params.system}\n\n---\n\n${params.prompt}${hint}`
-      : `${params.prompt}${hint}`;
+    // Put schema hint FIRST so Gemini sees it at highest priority
+    const fullPrompt = hint
+      ? `${hint}\n\n---\n\n${params.system ? params.system + '\n\n---\n\n' : ''}${params.prompt}`
+      : (params.system ? `${params.system}\n\n---\n\n${params.prompt}` : params.prompt);
     const result = await geminiModel.generateContent(fullPrompt);
     const text = result.response.text();
+    console.warn('[Gemini raw]', text.slice(0, 300));
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     const raw = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     const coerced = coerceToSchema(raw, params.schema);
