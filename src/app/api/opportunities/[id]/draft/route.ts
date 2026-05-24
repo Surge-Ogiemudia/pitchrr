@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
 import Opportunity from '@/models/Opportunity';
 import { maybeEnrichProfile } from '@/lib/ai/profile-enrichment';
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  
     const { id } = await params;
     await dbConnect();
     const url = new URL(req.url);
     const questionIndex = url.searchParams.get('questionIndex');
 
-    const opportunity = await Opportunity.findById(id);
+    const opportunity = await Opportunity.findOne({ _id: id, userId: session.user.id });
     if (!opportunity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     if (questionIndex !== null) {
@@ -30,11 +37,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { id } = await params;
     await dbConnect();
     const { questionIndex, content, status } = await req.json();
 
-    const opportunity = await Opportunity.findById(id);
+    const opportunity = await Opportunity.findOne({ _id: id, userId: session.user.id });
     if (!opportunity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     // Update or push the drafted answer

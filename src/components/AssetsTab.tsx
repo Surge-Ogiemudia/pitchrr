@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useSession } from 'next-auth/react';
 
 export default function AssetsTab({ opportunityId }: { opportunityId: string }) {
+  const { data: session } = useSession();
+  const isCareer = session?.user?.persona === 'career';
   const [assetType, setAssetType] = useState<string>('');
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [generatedAsset, setGeneratedAsset] = useState<string>('');
@@ -60,29 +63,59 @@ export default function AssetsTab({ opportunityId }: { opportunityId: string }) 
         <p className="text-xs text-muted mb-4 leading-relaxed">Generate specific assets (like a 1-min video script or tailored CV) perfectly tuned for this opportunity. The AI uses your Master Resources + Opportunity criteria to draft them.</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button 
-            onClick={() => generateAsset('Video Script', 'Draft a 1-minute video script introducing the founder and startup, focusing specifically on the evaluation criteria of this opportunity. Include camera/emotion cues.')}
-            className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
-          >
-            <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">🎥 Video Script</p>
-            <p className="text-[10px] text-muted">A 1-min pitch script</p>
-          </button>
+          {isCareer ? (
+            <>
+              <button 
+                onClick={() => generateAsset('Cover Letter', 'Draft a highly tailored Cover Letter for this job application. Emphasize experiences that directly align with the core requirements and expected skills.')}
+                className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
+              >
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">✉️ Cover Letter</p>
+                <p className="text-[10px] text-muted">Highly tailored to the JD</p>
+              </button>
 
-          <button 
-            onClick={() => generateAsset('Tailored CV', 'Draft a tailored Markdown CV highlighting the founder\'s background. Emphasize experiences that directly align with this opportunity\'s winner archetype and unfair advantages.')}
-            className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
-          >
-            <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">📄 Tailored CV</p>
-            <p className="text-[10px] text-muted">Highlight relevant skills</p>
-          </button>
+              <button 
+                onClick={() => generateAsset('Tailored CV', 'Draft a tailored Markdown CV highlighting the candidate\'s background. Emphasize experiences that directly align with this job description.')}
+                className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
+              >
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">📄 Tailored CV</p>
+                <p className="text-[10px] text-muted">Highlight relevant skills</p>
+              </button>
 
-          <button 
-            onClick={() => generateAsset('Pitch Deck Outline', 'Draft a 10-slide Pitch Deck Outline tailored to what this specific program/investor cares about most. Provide a title and 3 bullet points per slide.')}
-            className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
-          >
-            <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">📊 Deck Outline</p>
-            <p className="text-[10px] text-muted">Slide-by-slide narrative</p>
-          </button>
+              <button 
+                onClick={() => generateAsset('Cold Message', 'Draft a short, punchy Cold Message to a recruiter or hiring manager for this role. Max 150 words. Focus on the core value add.')}
+                className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
+              >
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">💬 Cold Message</p>
+                <p className="text-[10px] text-muted">For recruiter outreach</p>
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => generateAsset('Video Script', 'Draft a 1-minute video script introducing the founder and startup, focusing specifically on the evaluation criteria of this opportunity. Include camera/emotion cues.')}
+                className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
+              >
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">🎥 Video Script</p>
+                <p className="text-[10px] text-muted">A 1-min pitch script</p>
+              </button>
+
+              <button 
+                onClick={() => generateAsset('Tailored CV', 'Draft a tailored Markdown CV highlighting the founder\'s background. Emphasize experiences that directly align with this opportunity\'s winner archetype and unfair advantages.')}
+                className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
+              >
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">📄 Tailored CV</p>
+                <p className="text-[10px] text-muted">Highlight relevant skills</p>
+              </button>
+
+              <button 
+                onClick={() => generateAsset('Pitch Deck Outline', 'Draft a 10-slide Pitch Deck Outline tailored to what this specific program/investor cares about most. Provide a title and 3 bullet points per slide.')}
+                className="p-3 bg-elevated border border-border rounded-xl text-left hover:border-primary/50 transition-colors group"
+              >
+                <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors mb-1">📊 Deck Outline</p>
+                <p className="text-[10px] text-muted">Slide-by-slide narrative</p>
+              </button>
+            </>
+          )}
         </div>
 
         <div className="mt-4 pt-4 border-t border-border">

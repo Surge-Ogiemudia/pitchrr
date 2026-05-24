@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { formatDistanceToNow } from 'date-fns';
+import { useSession } from 'next-auth/react';
 
 interface Opportunity {
   _id: string;
@@ -26,6 +27,8 @@ const COLUMNS = [
 ];
 
 export default function PipelineDashboard() {
+  const { data: session } = useSession();
+  const isCareer = session?.user?.persona === 'career';
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputData, setInputData] = useState('');
@@ -182,8 +185,8 @@ export default function PipelineDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-1">Application Pipeline</h1>
-            <p className="text-muted text-sm">Strategic tracking for all opportunities.</p>
+            <h1 className="text-3xl font-bold text-foreground mb-1">{isCareer ? 'Job Applications' : 'Application Pipeline'}</h1>
+            <p className="text-muted text-sm">{isCareer ? 'Strategic tracking for your job search.' : 'Strategic tracking for all opportunities.'}</p>
           </div>
           
           <div className="flex-1 max-w-xl">
@@ -191,7 +194,7 @@ export default function PipelineDashboard() {
               <textarea
                 value={inputData}
                 onChange={(e) => { setInputData(e.target.value); setIntakeError(null); }}
-                placeholder="Paste opportunity URL or raw page text here..."
+                placeholder={isCareer ? "Paste Job Description URL or raw JD text here..." : "Paste opportunity URL or raw page text here..."}
                 required
                 rows={1}
                 className="flex-1 bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors resize-y min-h-[44px] max-h-32"

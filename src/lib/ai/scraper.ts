@@ -20,8 +20,8 @@ export const OpportunityIntakeSchema = z.object({
 
 export type OpportunityIntakeResult = z.infer<typeof OpportunityIntakeSchema>;
 
-export async function scrapeAndExtractOpportunity(url: string, rawText: string): Promise<OpportunityIntakeResult> {
-  const systemPrompt = buildSystemPrompt({ mode: 'intake' });
+export async function scrapeAndExtractOpportunity(url: string, rawText: string, persona: 'startup' | 'career' = 'startup'): Promise<OpportunityIntakeResult> {
+  const systemPrompt = buildSystemPrompt({ mode: 'intake', persona });
 
   const object = await generateObjectWithFallback({
     system: systemPrompt,

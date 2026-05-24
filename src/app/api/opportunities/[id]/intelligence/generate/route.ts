@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import { getStartupProfileModel } from '@/models/StartupProfile';
 import Opportunity from '@/models/Opportunity';
@@ -26,6 +28,11 @@ function saveTasks(opportunity: any, section: string, tasks: { task: string; typ
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  
     const { id } = await params;
     const { section } = await req.json();
 
@@ -34,8 +41,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const StartupProfile = getStartupProfileModel(sharedConn);
 
     const [profile, opportunity] = await Promise.all([
-      StartupProfile.findOne().lean(),
-      Opportunity.findById(id),
+      StartupProfile.findOne({ userId: session.user.id }).lean(),
+      Opportunity.findOne({ _id: id, userId: session.user.id }),
     ]);
 
     if (!opportunity) {

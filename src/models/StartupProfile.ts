@@ -1,4 +1,4 @@
-import { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 interface TrackedField {
   value: string;
@@ -54,6 +54,7 @@ interface ResourceItem {
 }
 
 export interface IStartupProfile extends Document {
+  userId: mongoose.Types.ObjectId;
   // Founder contact & identity
   founderName: TrackedField;
   founderEmail: TrackedField;
@@ -143,6 +144,7 @@ export const TRACKED_PROFILE_FIELDS = new Set([
 ]);
 
 export const StartupProfileSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   founderName: { type: TrackedFieldSchema, default: () => ({}) },
   founderEmail: { type: TrackedFieldSchema, default: () => ({}) },
   founderPhone: { type: TrackedFieldSchema, default: () => ({}) },

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOpportunity extends Document {
+  userId: mongoose.Types.ObjectId;
   programmeName: string;
   organisation: string;
   url: string;
@@ -157,6 +158,7 @@ export interface IOpportunity extends Document {
 }
 
 const OpportunitySchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   programmeName: { type: String, required: true },
   organisation: { type: String, required: true },
   url: { type: String, required: true },

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import Opportunity from '@/models/Opportunity';
 import { getStartupProfileModel } from '@/models/StartupProfile';
@@ -73,6 +75,10 @@ function parseDeadline(raw: string | null): Date | null {
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { url, rawText: providedRawText } = await req.json();
     if (!url && !providedRawText) return NextResponse.json({ error: 'URL or Raw Text required' }, { status: 400 });
 
@@ -89,19 +95,20 @@ export async function POST(req: Request) {
     }
 
     // 2. Extract opportunity via AI
-    const intakeResult = await scrapeAndExtractOpportunity(finalUrl, finalRawText);
+    const intakeResult = await scrapeAndExtractOpportunity(finalUrl, finalRawText, session.user.persona as any);
 
     // 3. Get Founder Profile
-    const profile = await StartupProfile.findOne().lean();
+    const profile = await StartupProfile.findOne({ userId: session.user.id }).lean();
 
     // 4. Score Fit
     let fitScoreResult = null;
     if (profile) {
-      fitScoreResult = await scoreOpportunityFit(profile as any, intakeResult as any);
+      fitScoreResult = await scoreOpportunityFit(profile as any, intakeResult as any, session.user.persona as any);
     }
 
     // 5. Save to database
     const newOpportunity = await Opportunity.create({
+      userId: session.user.id,
       programmeName: intakeResult.programmeName,
       organisation: intakeResult.organisation,
       url: finalUrl,

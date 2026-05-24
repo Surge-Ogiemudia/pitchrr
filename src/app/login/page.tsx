@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export default function Login() {
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,60 +17,67 @@ export default function Login() {
     setLoading(true);
     setError('');
 
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
+    const res = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+    });
 
-      if (res.ok) {
-        router.push('/');
-      } else {
-        setError('Incorrect password');
-      }
-    } catch {
-      setError('Something went wrong');
-    } finally {
+    if (res?.error) {
+      setError('Invalid email or password');
       setLoading(false);
+    } else {
+      router.push('/');
+      router.refresh();
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
-
-      <div className="glass-card p-8 w-full max-w-md animate-fade-in-up">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="glass-card p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light mx-auto flex items-center justify-center text-[#0A0A0F] font-bold text-3xl shadow-xl shadow-primary/20 mb-6">
-            P
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Pitchrr</h1>
-          <p className="text-muted text-sm">Strategic Application Engine</p>
+          <h1 className="text-2xl font-bold text-foreground">Welcome to Pitchrr</h1>
+          <p className="text-sm text-muted mt-2">Log in to access your intelligence engine.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1.5 ml-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="w-full bg-elevated border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1.5 ml-1">Password</label>
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password..."
-              className="w-full bg-elevated border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors text-center font-mono tracking-widest"
-              autoFocus
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="w-full bg-elevated border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
+              placeholder="••••••••"
             />
           </div>
-          
-          {error && <p className="text-danger text-sm text-center">{error}</p>}
-          
+
+          {error && <p className="text-danger text-xs font-semibold text-center">{error}</p>}
+
           <button
             type="submit"
-            disabled={loading || !password}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all active:scale-95 disabled:opacity-50"
+            disabled={loading}
+            className="w-full bg-primary text-[#0A0A0F] font-bold py-3 rounded-xl hover:bg-primary-light transition-colors disabled:opacity-50 mt-4"
           >
-            {loading ? 'Accessing...' : 'Enter'}
+            {loading ? 'Logging in...' : 'Log in'}
           </button>
         </form>
+
+        <p className="text-center text-xs text-muted mt-6">
+          Don't have an account? <Link href="/register" className="text-primary hover:underline font-semibold">Sign up</Link>
+        </p>
       </div>
     </div>
   );

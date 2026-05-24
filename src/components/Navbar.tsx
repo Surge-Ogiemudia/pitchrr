@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const links = [
     { href: '/', label: 'Pipeline', icon: '⚡' },
@@ -23,6 +25,13 @@ export default function Navbar() {
             <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary-light to-primary bg-clip-text text-transparent">
               Pitchrr
             </span>
+            {session?.user && (
+              <span className={`hidden sm:inline-flex ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                session.user.persona === 'career' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-primary/10 text-primary border border-primary/20'
+              }`}>
+                {session.user.persona} Mode
+              </span>
+            )}
           </Link>
 
           <div className="flex items-center gap-1 sm:gap-2">
@@ -42,6 +51,21 @@ export default function Navbar() {
                 </Link>
               ))}
             </div>
+            
+            {session?.user && (
+              <div className="flex items-center gap-3 ml-2 sm:ml-4 pl-2 sm:pl-4 border-l border-border">
+                <span className="text-xs font-semibold text-muted hidden md:block">
+                  {session.user.name}
+                </span>
+                <button 
+                  onClick={() => signOut()}
+                  className="text-xs font-bold text-muted hover:text-danger transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+            
             <a
               href={process.env.NEXT_PUBLIC_PREPARR_URL || 'https://preprr.vercel.app/'}
               className="text-primary hover:text-primary-light font-bold text-xl sm:text-2xl ml-1 sm:ml-2 transition-colors"

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import Opportunity from '@/models/Opportunity';
 import { getStartupProfileModel } from '@/models/StartupProfile';
@@ -9,6 +11,11 @@ export const maxDuration = 60;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  
     const { id } = await params;
     const { questionIndex } = await req.json();
 
@@ -17,8 +24,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const StartupProfile = getStartupProfileModel(sharedConn);
 
     const [opportunity, profile] = await Promise.all([
-      Opportunity.findById(id).lean(),
-      StartupProfile.findOne().lean(),
+      Opportunity.findOne({ _id: id, userId: session.user.id }).lean(),
+      StartupProfile.findOne({ userId: session.user.id }).lean(),
     ]);
 
     if (!opportunity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -26,7 +33,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const q = (opportunity as any).scrapedQuestions?.[questionIndex];
     if (!q) return NextResponse.json({ error: 'Question not found' }, { status: 404 });
 
-    const systemPrompt = `${buildSystemPrompt({ mode: 'drafting', profile: profile as any, opportunity: opportunity as any })}
+    const systemPrompt = `${buildSystemPrompt({ mode: 'drafting', profile: profile as any, opportunity: opportunity as any , persona: session.user.persona as any })}
 
 --- STREAM OVERRIDE ---
 Ignore the STRATEGY instruction above. Output ONLY the final draft answer text. No headers, no "DRAFT" label, no strategy section, no commentary. Just the answer as it would appear in the submission form.`;

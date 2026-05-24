@@ -5,6 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import Navbar from '@/components/Navbar';
 import ReactMarkdown from 'react-markdown';
+import { useSession } from 'next-auth/react';
 
 type ProfileTab = 'founder' | 'startup' | 'traction' | 'stories' | 'facts' | 'resources';
 
@@ -518,6 +519,8 @@ const getMessageText = (m: any) =>
     .join('') ?? '';
 
 export default function ProfilePage() {
+  const { data: session } = useSession();
+  const isCareer = session?.user?.persona === 'career';
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ProfileTab>('founder');
@@ -560,7 +563,7 @@ export default function ProfilePage() {
       {
         id: '1',
         role: 'assistant',
-        parts: [{ type: 'text', text: `I'm your profile brain. Tell me anything — your email, phone, latest traction, team updates, startup name, stage, anything. I'll save it all so every new application autofills from here.` }],
+        parts: [{ type: 'text', text: isCareer ? `I'm your profile brain. Tell me anything — your email, latest experience, career goals, past achievements. I'll save it all so every new job application autofills from here.` : `I'm your profile brain. Tell me anything — your email, phone, latest traction, team updates, startup name, stage, anything. I'll save it all so every new application autofills from here.` }],
       }
     ],
     onError: (err) => alert('Chat Error: ' + err.message),
@@ -644,9 +647,9 @@ export default function ProfilePage() {
   };
 
   const tabs: { key: ProfileTab; label: string; count?: number }[] = [
-    { key: 'founder', label: 'Founder' },
-    { key: 'startup', label: 'Startup' },
-    { key: 'traction', label: 'Traction', count: profileData?.traction?.length || 0 },
+    { key: 'founder', label: isCareer ? 'Candidate' : 'Founder' },
+    { key: 'startup', label: isCareer ? 'Experience' : 'Startup' },
+    { key: 'traction', label: isCareer ? 'Achievements' : 'Traction', count: profileData?.traction?.length || 0 },
     { key: 'stories', label: 'Stories', count: profileData?.stories?.length || 0 },
     { key: 'resources', label: 'Resources', count: profileData?.resources?.length || 0 },
     { key: 'facts', label: 'Facts', count: profileData?.dynamicFields?.length || 0 },
@@ -734,7 +737,7 @@ export default function ProfilePage() {
 
                   {/* Team */}
                   <div>
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-1">Team Members</p>
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-1">{isCareer ? 'References / Teammates' : 'Team Members'}</p>
                     {profileData?.team?.length > 0 ? (
                       <div className="space-y-2">
                         {profileData.team.map((member: any, i: number) => (
@@ -765,7 +768,7 @@ export default function ProfilePage() {
                   {/* Header card */}
                   <div className="glass-card p-5">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <p className="text-lg font-bold text-foreground">{profileData?.startupName?.value || <span className="text-muted italic font-normal text-base">Startup name not set</span>}</p>
+                      <p className="text-lg font-bold text-foreground">{profileData?.startupName?.value || <span className="text-muted italic font-normal text-base">{isCareer ? 'Current Role not set' : 'Startup name not set'}</span>}</p>
                       <div className="flex gap-2 flex-wrap">
                         {profileData?.stage?.value && (
                           <span className="text-xs px-2.5 py-1 rounded-full bg-primary/20 text-primary border border-primary/30 font-medium">{profileData.stage.value}</span>
@@ -784,18 +787,18 @@ export default function ProfilePage() {
                   </div>
 
                   {[
-                    { field: 'startupName', label: 'Startup Name' },
-                    { field: 'stage', label: 'Stage' },
-                    { field: 'industry', label: 'Industry' },
-                    { field: 'website', label: 'Website' },
-                    { field: 'oneLiner', label: 'One Liner' },
-                    { field: 'problem', label: 'Problem Statement' },
-                    { field: 'solution', label: 'Solution' },
-                    { field: 'businessModel', label: 'Business Model' },
-                    { field: 'marketSize', label: 'Market Size / Target' },
-                    { field: 'uniqueness', label: 'Uniqueness / Moat' },
-                    { field: 'mission', label: 'Mission / Vision' },
-                    { field: 'useOfFunds', label: 'Use of Funds' },
+                    { field: 'startupName', label: isCareer ? 'Current Headline' : 'Startup Name' },
+                    { field: 'stage', label: isCareer ? 'Experience Level' : 'Stage' },
+                    { field: 'industry', label: isCareer ? 'Target Industry' : 'Industry' },
+                    { field: 'website', label: isCareer ? 'Portfolio / Website' : 'Website' },
+                    { field: 'oneLiner', label: isCareer ? 'Elevator Pitch' : 'One Liner' },
+                    { field: 'problem', label: isCareer ? 'Core Skills' : 'Problem Statement' },
+                    { field: 'solution', label: isCareer ? 'Certifications / Degrees' : 'Solution' },
+                    { field: 'businessModel', label: isCareer ? 'Career Goal' : 'Business Model' },
+                    { field: 'marketSize', label: isCareer ? 'Target Salary' : 'Market Size / Target' },
+                    { field: 'uniqueness', label: isCareer ? 'Unique Value Proposition' : 'Uniqueness / Moat' },
+                    { field: 'mission', label: isCareer ? 'Personal Mission' : 'Mission / Vision' },
+                    { field: 'useOfFunds', label: isCareer ? 'Availability' : 'Use of Funds' },
                   ].map(({ field, label }) => (
                     <FieldCard key={field} label={label} field={field} value={profileData?.[field]?.value || ''} onSave={handleFieldSave} />
                   ))}

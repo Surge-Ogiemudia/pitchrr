@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { streamText } from 'ai';
 import { dbConnect, dbConnectShared } from '@/lib/db';
 import { getStartupProfileModel } from '@/models/StartupProfile';
@@ -10,6 +12,11 @@ export const maxDuration = 60;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  
     const { id } = await params;
     const { mode, messages } = await req.json();
 
@@ -22,8 +29,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const StartupProfile = getStartupProfileModel(sharedConn);
 
     const [profile, opportunity] = await Promise.all([
-      StartupProfile.findOne().lean(),
-      Opportunity.findById(id).lean(),
+      StartupProfile.findOne({ userId: session.user.id }).lean(),
+      Opportunity.findOne({ _id: id, userId: session.user.id }).lean(),
     ]);
 
     if (!opportunity) {
@@ -34,6 +41,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       mode,
       profile: profile as any,
       opportunity: opportunity as any,
+      persona: session.user.persona as any
     });
 
     const getContent = (m: any): string => {

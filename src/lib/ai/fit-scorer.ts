@@ -21,8 +21,8 @@ export const FitScoreSchema = z.object({
 
 export type FitScoreResult = z.infer<typeof FitScoreSchema>;
 
-export async function scoreOpportunityFit(profile: IStartupProfile, opportunity: IOpportunity): Promise<FitScoreResult> {
-  const systemPrompt = buildSystemPrompt({ mode: 'analysis', profile, opportunity });
+export async function scoreOpportunityFit(profile: IStartupProfile, opportunity: IOpportunity, persona: 'startup' | 'career' = 'startup'): Promise<FitScoreResult> {
+  const systemPrompt = buildSystemPrompt({ mode: 'analysis', profile, opportunity, persona });
 
   const object = await generateObjectWithFallback({
     system: systemPrompt,
