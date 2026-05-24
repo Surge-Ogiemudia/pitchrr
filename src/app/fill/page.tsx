@@ -24,7 +24,6 @@ export default function FillPage() {
   const [msg, setMsg] = useState<{ type: 'info' | 'ok' | 'err'; text: string } | null>(null);
   const [pasteText, setPasteText] = useState('');
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [copiedAll, setCopiedAll] = useState(false);
   // Sequential fill mode
   const [seqMode, setSeqMode] = useState(false);
   const [seqIdx, setSeqIdx] = useState(0);
@@ -122,37 +121,27 @@ export default function FillPage() {
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
-  const copyAll = async (opp: Opp) => {
-    const lines: string[] = [];
-    opp.scrapedQuestions.forEach((q, idx) => {
-      const draft = opp.draftedAnswers?.find(a => a.questionIndex === idx);
-      if (draft) {
-        lines.push(`Q${idx + 1}: ${q.question}`);
-        lines.push(draft.content);
-        lines.push('');
-      }
-    });
-    await navigator.clipboard.writeText(lines.join('\n').trim());
-    setCopiedAll(true);
-    setTimeout(() => setCopiedAll(false), 2500);
-  };
-
-  const enterSeqMode = useCallback(async (opp: Opp, startIdx = 0) => {
-    setSeqIdx(startIdx);
+  const enterSeqMode = useCallback(async (opp: Opp) => {
+    setSeqIdx(0);
     setSeqMode(true);
     setSeqCopied(false);
-    // Auto-copy the first answer
-    const draft = opp.draftedAnswers?.find(a => a.questionIndex === startIdx);
+    const draftedIndices = (opp.scrapedQuestions || [])
+      .map((_, i) => i)
+      .filter(i => opp.draftedAnswers?.some(a => a.questionIndex === i));
+    const draft = opp.draftedAnswers?.find(a => a.questionIndex === draftedIndices[0]);
     if (draft) {
       await navigator.clipboard.writeText(draft.content);
       setSeqCopied(true);
     }
   }, []);
 
-  const seqNext = useCallback(async (opp: Opp, nextIdx: number) => {
-    setSeqIdx(nextIdx);
+  const seqNext = useCallback(async (opp: Opp, nextSeqIdx: number) => {
+    const draftedIndices = (opp.scrapedQuestions || [])
+      .map((_, i) => i)
+      .filter(i => opp.draftedAnswers?.some(a => a.questionIndex === i));
+    setSeqIdx(nextSeqIdx);
     setSeqCopied(false);
-    const draft = opp.draftedAnswers?.find(a => a.questionIndex === nextIdx);
+    const draft = opp.draftedAnswers?.find(a => a.questionIndex === draftedIndices[nextSeqIdx]);
     if (draft) {
       await navigator.clipboard.writeText(draft.content);
       setSeqCopied(true);
@@ -168,9 +157,13 @@ export default function FillPage() {
   // ── Sequential fill mode ──
   if (selected && seqMode) {
     const questions = selected.scrapedQuestions || [];
-    const q = questions[seqIdx];
-    const draft = selected.draftedAnswers?.find(a => a.questionIndex === seqIdx);
-    const isLast = seqIdx === questions.length - 1;
+    const draftedIndices = questions
+      .map((_, i) => i)
+      .filter(i => selected.draftedAnswers?.some(a => a.questionIndex === i));
+    const currentQIdx = draftedIndices[seqIdx];
+    const q = questions[currentQIdx];
+    const draft = selected.draftedAnswers?.find(a => a.questionIndex === currentQIdx);
+    const isLast = seqIdx === draftedIndices.length - 1;
 
     return (
       <div className="min-h-screen">
@@ -184,13 +177,13 @@ export default function FillPage() {
               ← Back to all answers
             </button>
             <span className="text-xs font-semibold text-subtle bg-elevated px-3 py-1.5 rounded-full border border-border">
-              {seqIdx + 1} / {questions.length}
+              {seqIdx + 1} / {draftedIndices.length}
             </span>
           </div>
 
           {/* Progress dots */}
           <div className="flex gap-1.5 mb-6 justify-center">
-            {questions.map((_, i) => (
+            {draftedIndices.map((_, i) => (
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
@@ -242,6 +235,7 @@ export default function FillPage() {
           ) : (
             <button
               onClick={() => seqNext(selected, seqIdx + 1)}
+
               className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               Next answer
@@ -260,7 +254,6 @@ export default function FillPage() {
   // ── Detail view ──
   if (selected) {
     const hasQ = selected.scrapedQuestions?.length > 0;
-    const allDrafted = hasQ && (selected.draftedAnswers?.length || 0) >= selected.scrapedQuestions.length;
     const undrafted = hasQ ? selected.scrapedQuestions.length - (selected.draftedAnswers?.length || 0) : 0;
 
     return (
@@ -319,32 +312,15 @@ export default function FillPage() {
             </button>
           )}
 
-          {/* Fill actions — shown when all drafted */}
-          {allDrafted && (
-            <div className="flex gap-2 mb-5">
-              <button
-                onClick={() => enterSeqMode(selected, 0)}
-                className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                Fill one by one
-              </button>
-              <button
-                onClick={() => copyAll(selected)}
-                className={`px-4 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-95 border ${
-                  copiedAll
-                    ? 'bg-success/15 text-success border-success/30'
-                    : 'bg-elevated text-muted border-border hover:text-foreground hover:border-primary/50'
-                }`}
-                title="Copy all Q&As to clipboard"
-              >
-                {copiedAll ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                )}
-              </button>
-            </div>
+          {/* Fill actions — shown as soon as any answer is drafted */}
+          {hasQ && (selected.draftedAnswers?.length || 0) > 0 && (
+            <button
+              onClick={() => enterSeqMode(selected)}
+              className="w-full mb-5 py-3.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-[#0A0A0F] font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Fill one by one
+            </button>
           )}
 
           {/* Questions + answers */}
