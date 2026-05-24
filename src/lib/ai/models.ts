@@ -61,10 +61,20 @@ function camelWords(s: string): string[] {
 }
 
 // For any schema key still missing, find the Gemini key that shares the most words
+function getShape(schema: ZodSchema<any>): Record<string, any> | null {
+  try {
+    const def = (schema as any)._def;
+    if (!def) return null;
+    if (def.typeName !== 'ZodObject') return null;
+    // shape can be a function (Zod v3) or a plain object (some builds)
+    const shape = typeof def.shape === 'function' ? def.shape() : def.shape;
+    return shape && typeof shape === 'object' ? shape : null;
+  } catch { return null; }
+}
+
 function fuzzyRemap(obj: Record<string, any>, schema: ZodSchema<any>): Record<string, any> {
-  const def = (schema as any)._def;
-  if (def?.typeName !== 'ZodObject') return obj;
-  const shape = def.shape?.();
+  const shape = getShape(schema);
+  console.warn('[fuzzyRemap] schemaKeys:', shape ? Object.keys(shape) : 'NO SHAPE', '| geminiKeys:', Object.keys(obj));
   if (!shape) return obj;
   const result = { ...obj };
   const geminiKeys = Object.keys(obj);
@@ -78,6 +88,7 @@ function fuzzyRemap(obj: Record<string, any>, schema: ZodSchema<any>): Record<st
       const score = schemaWords.filter(w => gkWords.some(gw => gw.includes(w) || w.includes(gw))).length;
       if (score > bestScore) { bestScore = score; bestKey = gk; }
     }
+    console.warn('[fuzzyRemap]', schemaKey, '→', bestKey || 'NO MATCH', '(score', bestScore + ')');
     if (bestScore > 0 && bestKey) result[schemaKey] = result[bestKey];
   }
   return result;
