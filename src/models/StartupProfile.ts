@@ -44,6 +44,15 @@ interface Story {
   addedAt: Date;
 }
 
+interface ResourceItem {
+  title: string;
+  type: 'pitch-deck' | 'cv' | 'intro-video' | 'product-demo' | 'executive-summary' | 'financial-model' | 'other';
+  format: 'pdf' | 'docx' | 'ppt' | 'link' | 'youtube' | 'other';
+  url: string;
+  extractedContext?: string;
+  addedAt: Date;
+}
+
 export interface IStartupProfile extends Document {
   // Founder contact & identity
   founderName: TrackedField;
@@ -71,6 +80,7 @@ export interface IStartupProfile extends Document {
   traction: TractionItem[];
   team: TeamMember[];
   stories: Story[];
+  resources: ResourceItem[];
   dynamicFields: DynamicField[];
   framings: Framing[];
   draftingRules: string[];
@@ -116,6 +126,15 @@ const FramingSchema = new Schema({
   addedAt: { type: Date, default: Date.now },
 }, { _id: true });
 
+const ResourceItemSchema = new Schema({
+  title: { type: String, required: true },
+  type: { type: String, enum: ['pitch-deck', 'cv', 'intro-video', 'product-demo', 'executive-summary', 'financial-model', 'other'], default: 'other' },
+  format: { type: String, enum: ['pdf', 'docx', 'ppt', 'link', 'youtube', 'other'], default: 'other' },
+  url: { type: String, required: true },
+  extractedContext: { type: String },
+  addedAt: { type: Date, default: Date.now },
+}, { _id: true });
+
 export const TRACKED_PROFILE_FIELDS = new Set([
   'founderName', 'founderEmail', 'founderPhone', 'founderLocation', 'founderLinkedIn', 'founderBio',
   'startupName', 'website', 'stage', 'industry',
@@ -154,6 +173,7 @@ export const StartupProfileSchema = new Schema({
     }],
     default: [],
   },
+  resources: { type: [ResourceItemSchema], default: [] },
   dynamicFields: { type: [DynamicFieldSchema], default: [] },
   framings: { type: [FramingSchema], default: [] },
   draftingRules: { type: [String], default: [] },

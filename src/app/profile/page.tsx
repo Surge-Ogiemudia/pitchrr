@@ -6,7 +6,7 @@ import { DefaultChatTransport } from 'ai';
 import Navbar from '@/components/Navbar';
 import ReactMarkdown from 'react-markdown';
 
-type ProfileTab = 'founder' | 'startup' | 'traction' | 'stories' | 'facts';
+type ProfileTab = 'founder' | 'startup' | 'traction' | 'stories' | 'facts' | 'resources';
 
 const TRACTION_COLORS: Record<string, string> = {
   revenue: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
@@ -320,6 +320,197 @@ function StoriesTab({ stories, writingVoice, onSaveField, onSaveStory, onDeleteS
   );
 }
 
+function ResourcesTab({ resources, fetchProfile }: { resources: any[], fetchProfile: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState('pitch-deck');
+  const [format, setFormat] = useState('pdf');
+  const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title || !type || !format) return;
+    if (format !== 'link' && format !== 'youtube' && !file) return;
+    if ((format === 'link' || format === 'youtube') && !url) return;
+    
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('type', type);
+      formData.append('format', format);
+      if (file) formData.append('file', file);
+      if (url) formData.append('url', url);
+
+      const res = await fetch('/api/profile/resources', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        setAdding(false);
+        setTitle('');
+        setFile(null);
+        setUrl('');
+        fetchProfile();
+      } else {
+        alert('Failed to save resource.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('An error occurred while saving.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this resource?')) return;
+    try {
+      await fetch('/api/profile/resources', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      fetchProfile();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const TYPE_LABELS: Record<string, string> = {
+    'pitch-deck': 'Pitch Deck',
+    'cv': 'CV / Resume',
+    'intro-video': 'Intro Video',
+    'product-demo': 'Product Demo',
+    'executive-summary': 'Executive Summary',
+    'financial-model': 'Financial Model',
+    'other': 'Other',
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="glass-card p-5">
+        <p className="text-sm font-semibold text-foreground mb-1">Master Resources</p>
+        <p className="text-xs text-muted leading-relaxed">Upload your core Pitch Deck, CVs, and Intro Videos here. The AI will extract the text from PDFs and YouTube links to learn deeply about your startup, making your future applications even better. Other formats (DOCX, PPT) are safely stored for future reference.</p>
+      </div>
+
+      {resources.length === 0 ? (
+        <div className="glass-card p-6 text-center">
+          <p className="text-muted text-sm italic">No resources added yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {resources.map((r: any, i: number) => (
+            <div key={i} className="glass-card p-4 group flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+                {r.format === 'pdf' ? '📄' : r.format === 'youtube' ? '🎥' : r.format === 'link' ? '🔗' : '📎'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                  <p className="text-sm font-semibold text-foreground truncate">{r.title}</p>
+                  <button onClick={() => handleDelete(r._id)} className="opacity-0 group-hover:opacity-100 text-xs text-danger hover:text-red-400 transition-opacity ml-2">Delete</button>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-muted bg-elevated px-2 py-0.5 rounded-full">{TYPE_LABELS[r.type] || r.type}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-muted bg-elevated px-2 py-0.5 rounded-full">{r.format}</span>
+                  {r.extractedContext && r.extractedContext.length > 0 && r.format === 'pdf' && (
+                     <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">AI Parsed</span>
+                  )}
+                </div>
+                <a href={r.url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block truncate max-w-full">
+                  {r.url}
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {adding ? (
+        <div className="glass-card p-4 space-y-3 border border-primary/30">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase font-bold text-muted ml-1 mb-1 block">Title</label>
+              <input
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. Seed Deck v2"
+                className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold text-muted ml-1 mb-1 block">Resource Type</label>
+              <select
+                value={type}
+                onChange={e => setType(e.target.value)}
+                className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+              >
+                {Object.entries(TYPE_LABELS).map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+             <label className="text-[10px] uppercase font-bold text-muted ml-1 mb-1 block">Format</label>
+             <div className="flex gap-2 flex-wrap">
+               {['pdf', 'docx', 'ppt', 'youtube', 'link'].map(f => (
+                 <button
+                   key={f}
+                   onClick={() => { setFormat(f); setFile(null); setUrl(''); }}
+                   className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${format === f ? 'bg-primary text-[#0A0A0F] border-primary font-bold' : 'bg-elevated text-muted border-border hover:border-primary/50'}`}
+                 >
+                   {f.toUpperCase()}
+                 </button>
+               ))}
+             </div>
+          </div>
+
+          {(format === 'link' || format === 'youtube') ? (
+            <div>
+               <label className="text-[10px] uppercase font-bold text-muted ml-1 mb-1 block">URL</label>
+               <input
+                 value={url}
+                 onChange={e => setUrl(e.target.value)}
+                 placeholder="https://..."
+                 className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+               />
+            </div>
+          ) : (
+            <div>
+               <label className="text-[10px] uppercase font-bold text-muted ml-1 mb-1 block">File Upload</label>
+               <input
+                 type="file"
+                 accept={format === 'pdf' ? '.pdf' : format === 'docx' ? '.docx' : format === 'ppt' ? '.ppt,.pptx' : undefined}
+                 onChange={e => setFile(e.target.files?.[0] || null)}
+                 className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+               />
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <button 
+              onClick={handleSubmit} 
+              disabled={uploading || !title || (!file && !url)} 
+              className="text-xs px-4 py-2 rounded-lg bg-primary text-[#0A0A0F] font-semibold disabled:opacity-40"
+            >
+              {uploading ? 'Uploading...' : 'Save Resource'}
+            </button>
+            <button onClick={() => { setAdding(false); setFile(null); setUrl(''); }} disabled={uploading} className="text-xs px-4 py-2 rounded-lg border border-border text-muted hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="w-full py-2.5 rounded-xl border border-dashed border-border text-xs text-muted hover:text-foreground hover:border-primary/50 transition-colors"
+        >
+          + Add new resource
+        </button>
+      )}
+    </div>
+  );
+}
+
 const getMessageText = (m: any) =>
   (m.parts as any[])
     ?.filter((p: any) => p.type === 'text')
@@ -457,6 +648,7 @@ export default function ProfilePage() {
     { key: 'startup', label: 'Startup' },
     { key: 'traction', label: 'Traction', count: profileData?.traction?.length || 0 },
     { key: 'stories', label: 'Stories', count: profileData?.stories?.length || 0 },
+    { key: 'resources', label: 'Resources', count: profileData?.resources?.length || 0 },
     { key: 'facts', label: 'Facts', count: profileData?.dynamicFields?.length || 0 },
   ];
 
@@ -646,6 +838,14 @@ export default function ProfilePage() {
                   onSaveField={handleFieldSave}
                   onSaveStory={handleSaveStory}
                   onDeleteStory={handleDeleteStory}
+                />
+              )}
+
+              {/* RESOURCES TAB */}
+              {activeTab === 'resources' && (
+                <ResourcesTab
+                  resources={profileData?.resources || []}
+                  fetchProfile={fetchProfile}
                 />
               )}
 

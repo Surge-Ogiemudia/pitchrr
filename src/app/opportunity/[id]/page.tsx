@@ -9,9 +9,10 @@ import IntelligenceTab from '@/components/IntelligenceTab';
 import DraftingTab from '@/components/DraftingTab';
 import StrategyTab from '@/components/StrategyTab';
 import ReviewTab from '@/components/ReviewTab';
+import AssetsTab from '@/components/AssetsTab';
 import { computeIntelligenceScores } from '@/lib/intelligence-scores';
 
-type Tab = 'intelligence' | 'strategy' | 'drafting' | 'review';
+type Tab = 'intelligence' | 'strategy' | 'drafting' | 'assets' | 'review';
 
 const STATUS_OPTIONS = [
   'discovered', 'analyzing', 'drafting', 'reviewing',
@@ -110,6 +111,7 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
     { id: 'intelligence', label: 'Intelligence', badge: `${scores.overall}%` },
     { id: 'strategy', label: 'Strategy' },
     { id: 'drafting', label: 'Drafting', badge: questionCount > 0 ? `${draftCount}/${questionCount}` : undefined },
+    { id: 'assets', label: 'Assets' },
     { id: 'review', label: 'Review' },
   ];
 
@@ -268,6 +270,7 @@ export default function OpportunityDetail({ params }: { params: Promise<{ id: st
             onUpdate={handleUpdate}
           />
         )}
+        {activeTab === 'assets' && <AssetsTab opportunityId={id} />}
         {activeTab === 'review' && <ReviewTab opportunity={opportunity} />}
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { IStartupProfile } from '@/models/StartupProfile';
 import { IOpportunity } from '@/models/Opportunity';
 
-export type AIMode = 'intake' | 'drafting' | 'profile' | 'analysis' | 'extract_questions' | 'opportunity-dna' | 'winners-dna';
+export type AIMode = 'intake' | 'drafting' | 'profile' | 'analysis' | 'extract_questions' | 'opportunity-dna' | 'winners-dna' | 'asset_generation';
 
 interface PromptParams {
   mode: AIMode;
@@ -53,6 +53,9 @@ TRACTION
 
 ADDITIONAL FACTS
   ${p.dynamicFields?.map((f: any) => `${f.key}: ${f.value}`).join('\n  ') || 'None'}
+
+MASTER RESOURCES (Reference these for deep context)
+  ${p.resources?.map((r: any) => `[${r.type.toUpperCase()}] ${r.title}\n  ${r.extractedContext ? r.extractedContext : 'No text extracted'}`).join('\n\n  ') || 'None'}
 -------------------------------` : '';
 
   const oppContext = opportunity ? `
@@ -329,6 +332,22 @@ CRITICAL RULES:
 
 Current conversation depth: ${userMessageCount} user message(s).
 ${userMessageCount === 0 ? 'The user is about to share their first batch of winner data. Be ready to receive and extract immediately.' : userMessageCount === 1 ? 'The user has shared initial winner data. Extract everything you can, structure it, compare to the founder profile, then identify gaps and give specific research directions.' : 'You are in Phase 3. Extract from whatever was just shared, compare to the archetype, and ask for the next specific gap.'}`;
+  }
+
+  if (mode === 'asset_generation') {
+    return `${baseIdentity}
+${profileContext}
+${oppContext}
+
+You are in ASSET GENERATION mode. Your job is to draft a tailored document (like a Video Script, CV, or Pitch Deck Outline) for the founder, specifically tailored for the opportunity context above.
+You must fuse the Master Resources, the Founder/Startup profile, and the exact constraints of the opportunity.
+
+CRITICAL RULES FOR ASSETS:
+1. Format your output strictly in Markdown.
+2. If it is a Video Script, include camera cues (e.g., [Upbeat, speaking to camera]) and keep the pacing realistic.
+3. If it is a CV, highlight experiences most relevant to the opportunity's evaluation criteria.
+4. If it is a Pitch Deck outline, provide slide-by-slide bullet points matching the program's required narrative flow.
+5. Base everything on facts from the Profile and Resources. DO NOT hallucinate traction or numbers.`;
   }
 
   return baseIdentity;
