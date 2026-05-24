@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const archived = searchParams.get('archived') === 'true';
-    const query = archived ? { archived: true } : { archived: { $ne: true } };
+    const query = archived ? { archived: true, userId: session.user.id } : { archived: { $ne: true }, userId: session.user.id };
     const opportunities = await Opportunity.find(query).sort({ createdAt: -1 }).lean();
     return NextResponse.json(opportunities);
   } catch (error) {
@@ -24,10 +24,14 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  
     await dbConnect();
     const body = await req.json();
-    const opportunity = await Opportunity.create(body);
+    const opportunity = await Opportunity.create({ ...body, userId: session.user.id });
     return NextResponse.json(opportunity);
   } catch (error) {
     console.error('Failed to create opportunity:', error);
