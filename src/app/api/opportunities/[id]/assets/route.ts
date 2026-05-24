@@ -5,8 +5,9 @@ import { getStartupProfileModel } from '@/models/StartupProfile';
 import { streamWithFallback } from '@/lib/ai/models';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { type, prompt } = await req.json();
 
     if (!type || !prompt) {
@@ -16,7 +17,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const sharedConn = await dbConnectShared();
     const StartupProfile = getStartupProfileModel(sharedConn);
 
-    const opportunity = await Opportunity.findById(params.id).lean();
+    const opportunity = await Opportunity.findById(id).lean();
     if (!opportunity) return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
 
     const profile = await StartupProfile.findOne().lean();
