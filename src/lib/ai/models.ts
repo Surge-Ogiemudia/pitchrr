@@ -82,6 +82,7 @@ export async function generateObjectWithFallback<T>(params: {
       : `${params.prompt}${hint}`;
     const result = await geminiModel.generateContent(fullPrompt);
     const text = result.response.text();
+    console.warn('[Gemini raw response]', text.slice(0, 500));
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     // Try direct parse, then try one level of unwrapping if the model wrapped the result
