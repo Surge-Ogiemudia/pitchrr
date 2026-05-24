@@ -27,7 +27,10 @@ function zodToTemplate(schema: any, depth = 0): string {
     case 'ZodEnum':
     case 'enum': return `"${def.values[0]}"`;
     case 'ZodArray':
-    case 'array': return `[${zodToTemplate(def.type, depth + 1)}]`;
+    case 'array': {
+      const inner = def.element || def.type;
+      return `[${zodToTemplate(inner, depth + 1)}]`;
+    }
     case 'ZodObject':
     case 'object': {
       try {
@@ -122,6 +125,27 @@ function coerceToSchema(raw: any, schema: ZodSchema<any>): any {
           (ft === 'ZodNullable' || ft === 'nullable' ? (fd?.innerType?._def?.typeName === 'ZodString' || fd?.innerType?._def?.type === 'string' || fd?.innerType?.type === 'string') : false);
         if (isString && Array.isArray(normalized[key])) {
           normalized[key] = (normalized[key] as any[]).join('. ');
+        }
+
+        const isArray = ft === 'ZodArray' || ft === 'array';
+        if (isArray && Array.isArray(normalized[key])) {
+          const innerSchema = fd?.element || fd?.type;
+          const innerDef = innerSchema?._def || innerSchema?.def || innerSchema;
+          const innerFt = innerDef?.typeName || innerDef?.type || innerSchema?.type;
+          
+          if (innerFt === 'ZodObject' || innerFt === 'object') {
+            normalized[key] = normalized[key].map((item: any) => {
+              if (typeof item === 'string') {
+                const innerShape = typeof innerDef.shape === 'function' ? innerDef.shape() : innerDef.shape;
+                if (innerShape) {
+                  const firstKey = Object.keys(innerShape)[0] || 'question';
+                  return { [firstKey]: item };
+                }
+                return { question: item }; // fallback
+              }
+              return item;
+            });
+          }
         }
       }
     }
