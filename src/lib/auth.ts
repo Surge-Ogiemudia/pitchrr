@@ -1,6 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { dbConnectShared } from '@/lib/db';
+import { dbConnect } from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
@@ -15,7 +15,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         
-        await dbConnectShared();
+        await dbConnect();
         const user = await User.findOne({ email: credentials.email });
         if (!user) return null;
 

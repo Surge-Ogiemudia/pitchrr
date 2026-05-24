@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { dbConnectShared } from '@/lib/db';
+import { dbConnect } from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    await dbConnectShared();
+    await dbConnect();
     const existing = await User.findOne({ email });
     if (existing) {
       return NextResponse.json({ error: 'User already exists' }, { status: 400 });
