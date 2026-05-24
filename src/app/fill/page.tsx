@@ -298,7 +298,7 @@ export default function FillPage() {
           )}
 
           {/* Has questions but not all drafted */}
-          {hasQ && !allDrafted && (
+          {hasQ && undrafted > 0 && (
             <button
               onClick={() => draftAll(selected)}
               disabled={drafting}
