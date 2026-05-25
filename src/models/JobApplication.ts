@@ -33,6 +33,7 @@ export interface IJobApplication extends Document {
   resumeTailoring: {
     suggestions: string[];
     tailoredSummary: string;
+    atsKeywords: string[];
     generatedAt: Date;
   } | null;
   interviewPrep: {
@@ -43,8 +44,41 @@ export interface IJobApplication extends Document {
     }[];
     technicalTopics: string[];
     caseStudies: string[];
+    questionsToAsk: {
+      question: string;
+      intent: string;
+      round: string;
+    }[];
     generatedAt: Date;
   } | null;
+  interviewRounds: {
+    round: number;
+    type: 'phone' | 'technical' | 'take-home' | 'panel' | 'final' | 'reference';
+    scheduledAt: Date | null;
+    interviewer: string;
+    notes: string;
+    outcome: string;
+    status: 'scheduled' | 'completed' | 'cancelled';
+  }[];
+  offerDetails: {
+    baseSalary: string;
+    equity: string;
+    bonus: string;
+    benefits: string;
+    startDate: Date | null;
+    expiryDate: Date | null;
+    notes: string;
+    receivedAt: Date | null;
+  } | null;
+  recruiterInfo: {
+    name: string;
+    email: string;
+    linkedIn: string;
+    company: string;
+  } | null;
+  jobSource: string;
+  applicationMethod: string;
+  jobId: string;
   fitScore: {
     overall: number;
     breakdown: {
@@ -215,6 +249,7 @@ const JobApplicationSchema = new Schema({
   resumeTailoring: {
     suggestions: [String],
     tailoredSummary: { type: String, default: '' },
+    atsKeywords: { type: [String], default: [] },
     generatedAt: { type: Date },
   },
   interviewPrep: {
@@ -225,8 +260,41 @@ const JobApplicationSchema = new Schema({
     }],
     technicalTopics: [String],
     caseStudies: [String],
+    questionsToAsk: [{
+      question: { type: String, default: '' },
+      intent: { type: String, default: '' },
+      round: { type: String, default: '' },
+    }],
     generatedAt: { type: Date },
   },
+  interviewRounds: [{
+    round: { type: Number, required: true },
+    type: { type: String, enum: ['phone', 'technical', 'take-home', 'panel', 'final', 'reference'], default: 'phone' },
+    scheduledAt: { type: Date, default: null },
+    interviewer: { type: String, default: '' },
+    notes: { type: String, default: '' },
+    outcome: { type: String, default: '' },
+    status: { type: String, enum: ['scheduled', 'completed', 'cancelled'], default: 'scheduled' },
+  }],
+  offerDetails: {
+    baseSalary: { type: String, default: '' },
+    equity: { type: String, default: '' },
+    bonus: { type: String, default: '' },
+    benefits: { type: String, default: '' },
+    startDate: { type: Date, default: null },
+    expiryDate: { type: Date, default: null },
+    notes: { type: String, default: '' },
+    receivedAt: { type: Date, default: null },
+  },
+  recruiterInfo: {
+    name: { type: String, default: '' },
+    email: { type: String, default: '' },
+    linkedIn: { type: String, default: '' },
+    company: { type: String, default: '' },
+  },
+  jobSource: { type: String, default: '' },
+  applicationMethod: { type: String, default: '' },
+  jobId: { type: String, default: '' },
   fitScore: {
     overall: { type: Number, default: 0 },
     breakdown: [{

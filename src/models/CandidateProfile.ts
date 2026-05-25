@@ -74,6 +74,24 @@ interface Framing {
   addedAt: Date;
 }
 
+interface SocialLink {
+  platform: string;
+  url: string;
+  source: string;
+  addedAt: Date;
+}
+
+interface Reference {
+  name: string;
+  role: string;
+  company: string;
+  email: string;
+  phone: string;
+  relationship: string;
+  source: string;
+  addedAt: Date;
+}
+
 export interface ICandidateProfile extends Document {
   // Identity
   fullName: TrackedField;
@@ -101,6 +119,9 @@ export interface ICandidateProfile extends Document {
   certifications: CertificationItem[];
   projects: ProjectItem[];
   stories: Story[];
+  socialLinks: SocialLink[];
+  references: Reference[];
+  targetCompanies: string[];
   dynamicFields: DynamicField[];
   framings: Framing[];
   draftingRules: string[];
@@ -176,6 +197,24 @@ const FramingSchema = new Schema({
   addedAt: { type: Date, default: Date.now },
 }, { _id: true });
 
+const SocialLinkSchema = new Schema({
+  platform: { type: String, required: true },
+  url: { type: String, required: true },
+  source: { type: String, default: 'manual' },
+  addedAt: { type: Date, default: Date.now },
+}, { _id: true });
+
+const ReferenceSchema = new Schema({
+  name: { type: String, required: true },
+  role: { type: String, default: '' },
+  company: { type: String, default: '' },
+  email: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  relationship: { type: String, default: '' },
+  source: { type: String, default: 'manual' },
+  addedAt: { type: Date, default: Date.now },
+}, { _id: true });
+
 export const TRACKED_CANDIDATE_FIELDS = new Set([
   'fullName', 'email', 'phone', 'location', 'linkedIn', 'portfolio', 'headline', 'bio',
   'currentRole', 'currentCompany', 'yearsOfExperience', 'industry',
@@ -206,6 +245,9 @@ export const CandidateProfileSchema = new Schema({
   education: { type: [EducationItemSchema], default: [] },
   certifications: { type: [CertificationItemSchema], default: [] },
   projects: { type: [ProjectItemSchema], default: [] },
+  socialLinks: { type: [SocialLinkSchema], default: [] },
+  references: { type: [ReferenceSchema], default: [] },
+  targetCompanies: { type: [String], default: [] },
   stories: {
     type: [{
       title: { type: String, required: true },

@@ -311,6 +311,11 @@ export async function generateInterviewPrep(profile: ICandidateProfile, job: IJo
     })),
     technicalTopics: z.array(z.string()),
     caseStudies: z.array(z.string()),
+    questionsToAsk: z.array(z.object({
+      question: z.string(),
+      intent: z.string(),
+      round: z.string(),
+    })),
   });
 
   return generateObjectWithFallback({
@@ -321,6 +326,7 @@ Based on the job requirements, company culture, and the candidate's profile:
 1. List the most likely interview questions across all categories (behavioural, technical, situational, culture-fit, case). For each, provide brief prep notes — what angle to take, which story from their profile to deploy, what to avoid.
 2. List the specific technical topics they need to be ready to discuss or demonstrate (frameworks, tools, methodologies, domain knowledge this company uses).
 3. List 2-3 case study scenarios they should prepare — real examples from their work history that demonstrate the core competencies this role demands.
+4. List 8-12 sharp questions the candidate should ask across their interview rounds. For each question: the exact wording, the strategic intent behind asking it (what signal it sends, what information it surfaces), and which round it is most appropriate for (phone screen, technical, panel, final). Questions to ask are not a formality — they are part of the evaluation. A weak question signals disengagement. A sharp question signals preparation, seniority, and genuine interest.
 
 Be specific to this role and company. Generic interview prep lists are useless.`,
     schema,
@@ -331,6 +337,7 @@ export async function generateResumeTailoring(profile: ICandidateProfile, job: I
   const schema = z.object({
     suggestions: z.array(z.string()),
     tailoredSummary: z.string(),
+    atsKeywords: z.array(z.string()),
   });
 
   return generateObjectWithFallback({
@@ -340,6 +347,7 @@ export async function generateResumeTailoring(profile: ICandidateProfile, job: I
 Provide:
 1. A list of specific, actionable suggestions for adjusting the candidate's resume for this role — which achievements to lead with, which skills to make more prominent, what language to mirror from the job description, what to cut or deprioritise.
 2. A tailored professional summary (3-4 sentences) the candidate can use at the top of their resume specifically for this application. It should echo the job description's language, highlight the most relevant experience, and make the fit immediately obvious to a recruiter skimming in 6 seconds.
+3. A list of ATS keywords extracted directly from the job description — the exact terms, phrases, and tool names that an applicant tracking system is likely scanning for. These must appear verbatim (or very close) in the resume. Pull every specific technology, methodology, certification, and role-specific term from the JD. Miss one and the resume may be filtered before a human sees it.
 
 Be concrete. "Make your resume more relevant" is not a suggestion. "Move the Salesforce implementation bullet to the top of your current role and rewrite it to match their language 'revenue operations automation'" is a suggestion.`,
     schema,

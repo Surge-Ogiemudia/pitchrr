@@ -264,6 +264,9 @@ TOOLS YOU MUST USE:
 - add_education: whenever the candidate shares a degree, qualification, or institution
 - add_skill: whenever the candidate mentions a skill, tool, technology, or language
 - add_project: whenever the candidate describes a project, side project, or portfolio piece
+- add_social_link: whenever the candidate shares a link to GitHub, Dribbble, Behance, Twitter, personal blog, or any platform other than LinkedIn and their main portfolio
+- add_reference: whenever the candidate shares a professional reference (name, role, company, contact info, relationship)
+- update_target_companies: whenever the candidate mentions specific companies they are actively targeting or interested in
 - save_story: whenever the candidate tells a personal story, describes a specific moment, shares a challenge they overcame, a decision they made, a result they delivered, or anything that would make a powerful interview or application answer. These are gold — capture them verbatim.
 - delete_story: if the candidate asks to remove or correct a story
 
@@ -273,9 +276,12 @@ RULES:
 3. If they describe a job they held — call add_work_history_item immediately with every detail they gave.
 4. If they share a story or specific moment — call save_story immediately. Do not summarise. Capture it as they told it.
 5. If they describe how they write or communicate — call update_profile_field with field="writingVoice" and a clear description of their style.
-6. After every update, confirm what you just saved in one short sentence.
-7. Never say you "can't" update something. Everything is updateable.
-8. Stories are the most valuable thing in this profile. Every specific anecdote, every named person, every "there was this moment when..." — save it.`;
+6. If they mention a GitHub, Dribbble, or any non-LinkedIn/portfolio link — call add_social_link immediately.
+7. If they name a reference — call add_reference immediately with everything they shared.
+8. If they mention companies they want to work at — call update_target_companies immediately.
+9. After every update, confirm what you just saved in one short sentence.
+10. Never say you "can't" update something. Everything is updateable.
+11. Stories are the most valuable thing in this profile. Every specific anecdote, every named person, every "there was this moment when..." — save it.`;
   }
 
   if (mode === 'company-dna') {
