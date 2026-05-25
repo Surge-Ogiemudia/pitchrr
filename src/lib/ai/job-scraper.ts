@@ -13,6 +13,7 @@ export const JobIntakeSchema = z.object({
   requiredQualifications: z.string(),
   preferredQualifications: z.string(),
   responsibilities: z.string(),
+  applicationPortalUrl: z.string().nullable(),
   applicationQuestions: z.array(
     z.object({
       question: z.string(),

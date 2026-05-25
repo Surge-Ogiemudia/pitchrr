@@ -32,9 +32,19 @@ function buildProfileContext(profile: ICandidateProfile | null): string {
     .map((e: any) => `${e.degree}, ${e.institution}${e.year ? ` (${e.year})` : ''}`)
     .join(' | ') || 'Not set';
 
+  const certificationLines = (profile.certifications || [])
+    .map((c: any) => `${c.name}${c.issuer ? ` (${c.issuer})` : ''}${c.year ? ` — ${c.year}` : ''}`)
+    .join(' | ') || 'None';
+
   const projectLines = (profile.projects || [])
     .map((pr: any) => `${pr.name}: ${pr.description}${pr.impact ? ` — Impact: ${pr.impact}` : ''}`)
     .join('\n  ') || 'Not set';
+
+  const socialLinkLines = (profile.socialLinks || [])
+    .map((l: any) => `${l.platform}: ${l.url}`)
+    .join(' | ') || 'None';
+
+  const targetCompanyLines = (profile.targetCompanies || []).join(', ') || 'None';
 
   return `
 \n--- CANDIDATE PROFILE (Source of Truth) ---
@@ -45,6 +55,7 @@ IDENTITY
   Location: ${p.location?.value || 'Not set'}
   LinkedIn: ${p.linkedIn?.value || 'Not set'}
   Portfolio: ${p.portfolio?.value || 'Not set'}
+  Other Links: ${socialLinkLines}
   Headline: ${p.headline?.value || 'Not set'}
   Bio: ${p.bio?.value || 'Not set'}
 
@@ -56,9 +67,13 @@ CAREER
   Desired Salary: ${p.desiredSalary?.value || 'Not set'}
   Availability: ${p.availability?.value || 'Not set'}
   Work Authorization: ${p.workAuthorization?.value || 'Not set'}
+  Target Companies: ${targetCompanyLines}
 
 SKILLS
   ${skillLines}
+
+CERTIFICATIONS
+  ${certificationLines}
 
 WORK HISTORY
 ${workLines}
@@ -131,6 +146,7 @@ CRITICAL INSTRUCTIONS FOR QUALIFICATIONS:
 - Separate required from preferred carefully. "Must have" and "required" are hard requirements. "Nice to have", "preferred", "bonus", "desirable" are soft.
 - If the posting does not separate them, put everything in requiredQualifications and leave preferredQualifications empty.
 - If company or job title is missing, infer from context or use "Unknown".
+- For applicationPortalUrl: extract the direct application link if the posting includes one (e.g., "Apply here:", "Submit your application at:", a Greenhouse/Lever/Workday URL). If no distinct application link is present, return null.
 
 Respond ONLY with a valid JSON object matching the JobIntake structure.`;
   }
