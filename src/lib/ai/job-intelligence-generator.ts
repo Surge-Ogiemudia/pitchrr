@@ -24,6 +24,10 @@ function buildCandidateSummary(profile: ICandidateProfile | null): string {
     .map((e: any) => `${e.degree}, ${e.institution}${e.year ? ` (${e.year})` : ''}`)
     .join(' | ') || 'Not set';
 
+  const certificationLines = (profile.certifications || [])
+    .map((c: any) => `${c.name}${c.issuer ? ` (${c.issuer})` : ''}${c.year ? ` — ${c.year}` : ''}`)
+    .join(' | ') || 'None';
+
   const stories = (p.stories || [])
     .map((s: any) => `  [${s.theme.toUpperCase()}] "${s.title}": ${s.content}`)
     .join('\n');
@@ -47,6 +51,7 @@ DESIRED SALARY: ${p.desiredSalary?.value || 'Not set'}
 AVAILABILITY: ${p.availability?.value || 'Not set'}
 WORK AUTHORIZATION: ${p.workAuthorization?.value || 'Not set'}
 SKILLS: ${skillLines}
+CERTIFICATIONS: ${certificationLines}
 EDUCATION: ${educationLines}
 WORK HISTORY:
   ${workLines}

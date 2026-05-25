@@ -91,6 +91,10 @@ ADDITIONAL FACTS
 
 function buildJobContext(job: IJobApplication | null): string {
   if (!job) return '';
+  const j = job as any;
+  const recruiterLine = j.recruiterInfo?.name
+    ? `\nRecruiter: ${j.recruiterInfo.name}${j.recruiterInfo.email ? ` (${j.recruiterInfo.email})` : ''}${j.recruiterInfo.linkedIn ? ` | ${j.recruiterInfo.linkedIn}` : ''}`
+    : '';
   return `
 \n--- JOB CONTEXT ---
 Role: ${job.jobTitle} at ${job.company}
@@ -100,7 +104,7 @@ Type: ${job.employmentType || 'Not specified'}
 Department: ${job.department || 'Not specified'}
 Required Qualifications: ${job.requiredQualifications}
 Preferred Qualifications: ${job.preferredQualifications || 'None listed'}
-Responsibilities: ${job.responsibilities}
+Responsibilities: ${job.responsibilities}${recruiterLine}
 -------------------------------`;
 }
 
