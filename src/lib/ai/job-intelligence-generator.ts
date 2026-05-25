@@ -28,6 +28,12 @@ function buildCandidateSummary(profile: ICandidateProfile | null): string {
     .map((s: any) => `  [${s.theme.toUpperCase()}] "${s.title}": ${s.content}`)
     .join('\n');
 
+  const socialLinkLines = (profile.socialLinks || [])
+    .map((l: any) => `${l.platform}: ${l.url}`)
+    .join(' | ') || 'None';
+
+  const targetCompanyLines = (profile.targetCompanies || []).join(', ') || 'None';
+
   return `
 CANDIDATE: ${p.fullName?.value || 'Unknown'} | ${p.location?.value || ''} | ${p.linkedIn?.value || ''}
 EMAIL: ${p.email?.value || 'Not set'}
@@ -44,7 +50,9 @@ SKILLS: ${skillLines}
 EDUCATION: ${educationLines}
 WORK HISTORY:
   ${workLines}
-PROJECTS: ${(profile.projects || []).map((pr: any) => `${pr.name}: ${pr.description}`).join(' | ') || 'None'}
+PROJECTS: ${(profile.projects || []).map((pr: any) => `${pr.name}: ${pr.description}${pr.impact ? ` (${pr.impact})` : ''}`).join(' | ') || 'None'}
+SOCIAL LINKS: ${socialLinkLines}
+TARGET COMPANIES: ${targetCompanyLines}
 WRITING VOICE: ${p.writingVoice?.value || 'Not set'}
 STORIES:
 ${stories || '  None saved yet'}

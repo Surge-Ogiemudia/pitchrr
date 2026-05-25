@@ -4,6 +4,7 @@ export interface IJobApplication extends Document {
   jobTitle: string;
   company: string;
   url: string;
+  applicationPortalUrl: string;
   deadline: Date | null;
   salaryRange: string;
   location: string;
@@ -220,6 +221,7 @@ const JobApplicationSchema = new Schema({
   jobTitle: { type: String, required: true },
   company: { type: String, required: true },
   url: { type: String, required: true },
+  applicationPortalUrl: { type: String, default: '' },
   deadline: { type: Date, default: null },
   salaryRange: { type: String, default: '' },
   location: { type: String, default: '' },
